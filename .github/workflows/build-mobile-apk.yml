@@ -1,4 +1,4 @@
-name: Build Mobile APK (Android Only)
+name: Build Mobile APK 
 
 on:
   push:
@@ -62,7 +62,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Run Expo prebuild for Android only
+      - name: Run Expo prebuild for Android 
         run: npx expo prebuild --platform android --clean
 
       - name: Build Android APK
