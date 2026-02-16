@@ -1,0 +1,68 @@
+name: Build Mobile APK (Android Only)
+
+on:
+  push:
+    branches:
+      - feat/mobile-app
+    paths:
+      - 'packages/mobile/**'
+      - '.github/workflows/build-mobile-apk.yml'
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'packages/mobile/**'
+  workflow_dispatch:
+
+jobs:
+  build-android-apk:
+    name: Build Android APK
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: packages/mobile
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Run Expo prebuild for Android only
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build Android APK
+        working-directory: packages/mobile/android
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-mobile-android-${{ github.sha }}
+          path: packages/mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+      - name: Add build summary
+        run: |
+          echo "## 📱 Android APK Build Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ APK built successfully for Android" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Artifact: opencode-mobile-android-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 Download the APK from the workflow artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** This workflow builds Android APK only. iOS and web platforms are not included." >> $GITHUB_STEP_SUMMARY
