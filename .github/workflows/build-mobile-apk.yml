@@ -13,6 +13,12 @@ on:
     paths:
       - 'packages/mobile/**'
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name to build APK from'
+        required: true
+        default: 'feat/mobile-app'
+        type: string
 
 jobs:
   build-android-apk:
@@ -25,6 +31,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
@@ -62,6 +70,7 @@ jobs:
           echo "## 📱 Android APK Build Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ APK built successfully for Android" >> $GITHUB_STEP_SUMMARY
+          echo "🌿 Branch: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "📦 Artifact: opencode-mobile-android-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "🔗 Download the APK from the workflow artifacts" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
