@@ -24,7 +24,7 @@ export default function AddConnectionScreen() {
   const [mode, setMode] = useState<"quick" | "advanced">("quick")
   const [type, setType] = useState<ConnectionType>("local")
   const [name, setName] = useState("")
-  const [ip, setIp] = useState("")
+  const [serverAddress, setServerAddress] = useState("")
   const [port, setPort] = useState("4096")
   const [url, setUrl] = useState("")
   const [directory, setDirectory] = useState("")
@@ -34,14 +34,30 @@ export default function AddConnectionScreen() {
 
   const buildUrl = () => {
     if (mode === "advanced") return url.trim()
-    if (!ip.trim()) return ""
-    return `http://${ip.trim()}:${port || "4096"}`
+
+    const address = serverAddress.trim()
+    if (!address) return ""
+
+    // If it looks like a full URL (starts with http:// or https://), use it as-is
+    if (address.startsWith("http://") || address.startsWith("https://")) {
+      return address
+    }
+
+    // Otherwise treat it as IP:port or domain:port
+    const hasPort = address.includes(":")
+    if (hasPort) {
+      // If they included port in the address, use it
+      return address.startsWith("http") ? address : `http://${address}`
+    }
+
+    // Default: add http:// and port
+    return `http://${address}:${port || "4096"}`
   }
 
   const handleQuickConnect = async () => {
     const serverUrl = buildUrl()
     if (!serverUrl) {
-      Alert.alert("Error", "Please enter your computer's IP address")
+      Alert.alert("Error", "Please enter your server address (IP, domain, or URL)")
       return
     }
 
@@ -76,7 +92,7 @@ export default function AddConnectionScreen() {
       setIsConnecting(false)
       Alert.alert(
         "Connection Failed",
-        "Could not connect to the server.\n\nMake sure:\n1. OpenCode is running: opencode serve --hostname 0.0.0.0\n2. You're on the same WiFi network\n3. The IP address is correct",
+        "Could not connect to the server.\n\nFor local networks:\n1. OpenCode is running: opencode serve --hostname 0.0.0.0\n2. You're on the same WiFi network\n3. The IP address is correct\n\nFor hosted servers:\n1. Check the URL is accessible\n2. Server is running and reachable",
         [{ text: "OK" }],
       )
     }
@@ -119,33 +135,25 @@ export default function AddConnectionScreen() {
           <Ionicons name="wifi" size={48} color={isDark ? "#ffffff" : "#0a0a0a"} />
           <Text style={[styles.quickTitle, isDark && styles.textDark]}>Connect to OpenCode</Text>
           <Text style={[styles.quickSubtitle, isDark && styles.hintDark]}>
-            Enter your computer's IP address to connect
+            Enter your server address (IP, domain, or URL)
           </Text>
         </View>
 
-        {/* IP Address */}
-        <Text style={[styles.label, isDark && styles.labelDark]}>IP Address</Text>
-        <View style={styles.ipRow}>
-          <TextInput
-            style={[styles.input, styles.ipInput, isDark && styles.inputDark]}
-            placeholder="192.168.1.100"
-            placeholderTextColor={isDark ? "#666666" : "#999999"}
-            value={ip}
-            onChangeText={setIp}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="decimal-pad"
-          />
-          <Text style={[styles.ipColon, isDark && styles.textDark]}>:</Text>
-          <TextInput
-            style={[styles.input, styles.portInput, isDark && styles.inputDark]}
-            placeholder="4096"
-            placeholderTextColor={isDark ? "#666666" : "#999999"}
-            value={port}
-            onChangeText={setPort}
-            keyboardType="number-pad"
-          />
-        </View>
+        {/* Server Address */}
+        <Text style={[styles.label, isDark && styles.labelDark]}>Server Address</Text>
+        <TextInput
+          style={[styles.input, isDark && styles.inputDark]}
+          placeholder="opencode.yajana.in or 192.168.1.100:4096"
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          value={serverAddress}
+          onChangeText={setServerAddress}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+        <Text style={[styles.hint, isDark && styles.hintDark]}>
+          Enter a domain (opencode.yajana.in), IP address (192.168.1.100), or full URL (https://opencode.yajana.in)
+        </Text>
 
         {/* Optional name */}
         <Text style={[styles.label, isDark && styles.labelDark]}>Name (optional)</Text>
@@ -186,9 +194,18 @@ export default function AddConnectionScreen() {
 
         {/* Help text */}
         <View style={[styles.helpBox, isDark && styles.helpBoxDark]}>
-          <Text style={[styles.helpTitle, isDark && styles.textDark]}>How to find your IP:</Text>
+          <Text style={[styles.helpTitle, isDark && styles.textDark]}>Connection examples:</Text>
           <Text style={[styles.helpText, isDark && styles.hintDark]}>
-            On your Mac, run:{"\n"}
+            • Domain: <Text style={styles.code}>opencode.yajana.in</Text>
+          </Text>
+          <Text style={[styles.helpText, isDark && styles.hintDark]}>
+            • Local IP: <Text style={styles.code}>192.168.1.100:4096</Text>
+          </Text>
+          <Text style={[styles.helpText, isDark && styles.hintDark]}>
+            • Full URL: <Text style={styles.code}>https://opencode.yajana.in</Text>
+          </Text>
+          <Text style={[styles.helpText, isDark && styles.hintDark, { marginTop: 12 }]}>
+            For local connections, find your IP:{"\n"}
             <Text style={styles.code}>ipconfig getifaddr en0</Text>
           </Text>
           <Text style={[styles.helpText, isDark && styles.hintDark, { marginTop: 8 }]}>
