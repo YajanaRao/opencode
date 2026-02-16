@@ -5,29 +5,29 @@ on:
     branches:
       - feat/mobile-app
     paths:
-      - 'packages/mobile/**'
-      - '.github/workflows/build-mobile-apk.yml'
+      - "packages/mobile/**"
+      - ".github/workflows/build-mobile-apk.yml"
   pull_request:
     branches:
       - dev
     paths:
-      - 'packages/mobile/**'
+      - "packages/mobile/**"
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch name to build APK from'
+        description: "Branch name to build APK from"
         required: true
-        default: 'feat/mobile-app'
+        default: "feat/mobile-app"
         type: string
 
 jobs:
   build-android-apk:
     name: Build Android APK
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: packages/mobile
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,8 +45,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
