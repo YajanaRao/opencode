@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import * as LocalAuthentication from "expo-local-authentication"
-import * as SecureStore from "expo-secure-store"
+import { storage } from "../lib/storage"
 
 const AUTH_SETTINGS_KEY = "opencode_auth_settings"
 
@@ -54,7 +54,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       }
 
       // Load settings
-      const stored = await SecureStore.getItemAsync(AUTH_SETTINGS_KEY)
+      const stored = await storage.getItemAsync(AUTH_SETTINGS_KEY)
       const settings: AuthSettings = stored ? JSON.parse(stored) : DEFAULT_SETTINGS
 
       // If biometric is not required, auto-authenticate
@@ -125,7 +125,7 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   updateSettings: async (updates) => {
     const settings = { ...get().settings, ...updates }
-    await SecureStore.setItemAsync(AUTH_SETTINGS_KEY, JSON.stringify(settings))
+    await storage.setItemAsync(AUTH_SETTINGS_KEY, JSON.stringify(settings))
     set({ settings })
   },
 
