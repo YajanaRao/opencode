@@ -5,6 +5,8 @@ import { useColorScheme, View, ActivityIndicator } from "react-native"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet"
+import { SafeAreaProvider } from "react-native-safe-area-context"
+import { KeyboardProvider } from "react-native-keyboard-controller"
 import { useAuth } from "../src/stores/auth"
 import { useConnections } from "../src/stores/connections"
 import { useEvents } from "../src/stores/events"
@@ -73,48 +75,52 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <QueryClientProvider client={queryClient}>
-          <AuthGate>
-            <Stack
-              screenOptions={{
-                headerStyle: {
-                  backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
-                },
-                headerTintColor: isDark ? "#ffffff" : "#0a0a0a",
-                contentStyle: {
-                  backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
-                },
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="session/[id]"
-                options={{
-                  title: "Session",
-                  presentation: "card",
-                }}
-              />
-              <Stack.Screen
-                name="connection/add"
-                options={{
-                  title: "Add Connection",
-                  presentation: "modal",
-                }}
-              />
-              <Stack.Screen
-                name="connection/[id]"
-                options={{
-                  title: "Edit Connection",
-                  presentation: "modal",
-                }}
-              />
-            </Stack>
-            <StatusBar style={isDark ? "light" : "dark"} />
-          </AuthGate>
-        </QueryClientProvider>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <KeyboardProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <BottomSheetModalProvider>
+            <QueryClientProvider client={queryClient}>
+              <AuthGate>
+                <Stack
+                  screenOptions={{
+                    headerStyle: {
+                      backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
+                    },
+                    headerTintColor: isDark ? "#ffffff" : "#0a0a0a",
+                    contentStyle: {
+                      backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
+                    },
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="session/[id]"
+                    options={{
+                      title: "Session",
+                      presentation: "card",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="connection/add"
+                    options={{
+                      title: "Add Connection",
+                      presentation: "modal",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="connection/[id]"
+                    options={{
+                      title: "Edit Connection",
+                      presentation: "modal",
+                    }}
+                  />
+                </Stack>
+                <StatusBar style={isDark ? "light" : "dark"} />
+              </AuthGate>
+            </QueryClientProvider>
+          </BottomSheetModalProvider>
+        </GestureHandlerRootView>
+      </KeyboardProvider>
+    </SafeAreaProvider>
   )
 }

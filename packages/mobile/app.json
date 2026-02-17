@@ -15,24 +15,16 @@
     "android": {
       "package": "ai.opencode.mobile",
       "versionCode": 1,
-      "softInputMode": "adjustPan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "permissions": [
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
-      ]
+      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.USE_FINGERPRINT"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-secure-store",
-      "expo-local-authentication"
-    ],
+    "plugins": ["expo-router", "expo-secure-store", "expo-local-authentication"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   useColorScheme,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Alert,
@@ -15,6 +14,8 @@ import {
 import { useLocalSearchParams, Stack, useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useKeyboardHandler } from "react-native-keyboard-controller"
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated"
 import * as ImagePicker from "expo-image-picker"
 import * as ImageManipulator from "expo-image-manipulator"
 import * as Clipboard from "expo-clipboard"
@@ -77,12 +78,30 @@ function getShortDir(dir?: string): string | null {
   return parts[parts.length - 1] || null
 }
 
+// Custom hook for smooth keyboard animation
+function useKeyboardAnimation() {
+  const height = useSharedValue(0)
+
+  useKeyboardHandler(
+    {
+      onMove: (event) => {
+        "worklet"
+        height.value = Math.max(event.height, 0)
+      },
+    },
+    [],
+  )
+
+  return { height }
+}
+
 export default function SessionScreen() {
   const { id, directory } = useLocalSearchParams<{ id: string; directory?: string }>()
   const router = useRouter()
   const colorScheme = useColorScheme()
   const isDark = colorScheme === "dark"
   const insets = useSafeAreaInsets()
+  const { height: keyboardHeight } = useKeyboardAnimation()
 
   const flatListRef = useRef<FlatList>(null)
   const modelSheetRef = useRef<BottomSheet>(null)
@@ -433,6 +452,14 @@ export default function SessionScreen() {
   const agentColor = currentAgent?.color || "#8b5cf6"
   const modelLabel = model?.modelID ? model.modelID.split("/").pop() || model.modelID : "default"
 
+  // Animated style for keyboard spacer
+  // Subtract the bottom safe area inset since input container already has padding for it
+  const keyboardSpacerStyle = useAnimatedStyle(() => {
+    return {
+      height: Math.max(0, keyboardHeight.value - insets.bottom),
+    }
+  }, [insets.bottom])
+
   return (
     <>
       <Stack.Screen
@@ -458,11 +485,7 @@ export default function SessionScreen() {
         }}
       />
 
-      <KeyboardAvoidingView
-        style={[s.container, isDark && s.containerDark]}
-        behavior="padding"
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 70}
-      >
+      <View style={[s.container, isDark && s.containerDark]}>
         {/* Session info pulldown */}
         <SessionInfo
           session={currentSession}
@@ -630,7 +653,10 @@ export default function SessionScreen() {
             )}
           </View>
         </View>
-      </KeyboardAvoidingView>
+
+        {/* Animated keyboard spacer - pushes content up smoothly */}
+        <Animated.View style={keyboardSpacerStyle} />
+      </View>
 
       {/* Model picker bottom sheet */}
       <ModelPicker
@@ -736,6 +762,7 @@ const s = StyleSheet.create({
   // Input
   inputContainer: {
     padding: 12,
+    marginBottom: 8,
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
     backgroundColor: "#ffffff",
