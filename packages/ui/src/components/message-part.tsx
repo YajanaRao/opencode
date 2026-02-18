@@ -39,6 +39,7 @@ import { Accordion } from "./accordion"
 import { Button } from "./button"
 import { Card } from "./card"
 import { Collapsible } from "./collapsible"
+import { FileIcon } from "./file-icon"
 import { Icon } from "./icon"
 import { Checkbox } from "./checkbox"
 import { DiffChanges } from "./diff-changes"
@@ -671,13 +672,6 @@ export function UserMessageDisplay(props: { message: UserMessage; parts: PartTyp
 
   const agents = createMemo(() => (props.parts?.filter((p) => p.type === "agent") as AgentPart[]) ?? [])
 
-  const provider = createMemo(() => {
-    const id = props.message.model?.providerID
-    if (!id) return ""
-    const match = data.store.provider?.all?.find((p) => p.id === id)
-    return match?.name ?? id
-  })
-
   const model = createMemo(() => {
     const providerID = props.message.model?.providerID
     const modelID = props.message.model?.modelID
@@ -698,7 +692,7 @@ export function UserMessageDisplay(props: { message: UserMessage; parts: PartTyp
 
   const metaHead = createMemo(() => {
     const agent = props.message.agent
-    const items = [agent ? agent[0]?.toUpperCase() + agent.slice(1) : "", provider(), model()]
+    const items = [agent ? agent[0]?.toUpperCase() + agent.slice(1) : "", model()]
     return items.filter((x) => !!x).join("\u00A0\u00B7\u00A0")
   })
 
@@ -1054,13 +1048,6 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
       props.message.role === "assistant" && (props.message as AssistantMessage).error?.name === "MessageAbortedError",
   )
 
-  const provider = createMemo(() => {
-    if (props.message.role !== "assistant") return ""
-    const id = (props.message as AssistantMessage).providerID
-    const match = data.store.provider?.all?.find((p) => p.id === id)
-    return match?.name ?? id
-  })
-
   const model = createMemo(() => {
     if (props.message.role !== "assistant") return ""
     const message = props.message as AssistantMessage
@@ -1075,9 +1062,10 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
     if (typeof completed !== "number") return ""
     const ms = completed - message.time.created
     if (!(ms >= 0)) return ""
-    if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`
-    const minutes = Math.floor(ms / 60_000)
-    const seconds = Math.round((ms - minutes * 60_000) / 1000)
+    const total = Math.round(ms / 1000)
+    if (total < 60) return `${total}s`
+    const minutes = Math.floor(total / 60)
+    const seconds = total % 60
     return `${minutes}m ${seconds}s`
   })
 
@@ -1086,7 +1074,6 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
     const agent = (props.message as AssistantMessage).agent
     const items = [
       agent ? agent[0]?.toUpperCase() + agent.slice(1) : "",
-      provider(),
       model(),
       duration(),
       interrupted() ? i18n.t("ui.message.interrupted") : "",
@@ -1661,34 +1648,37 @@ ToolRegistry.register({
                     <Accordion.Header>
                       <Accordion.Trigger>
                         <div data-slot="apply-patch-trigger-content">
-                          <span data-slot="apply-patch-file-path">{file.relativePath}</span>
+                          <div data-slot="apply-patch-file-info">
+                            <FileIcon node={{ path: file.relativePath, type: "file" }} />
+                            <div data-slot="apply-patch-file-name-container">
+                              <Show when={file.relativePath.includes("/")}>
+                                <span data-slot="apply-patch-directory">{`\u202A${getDirectory(file.relativePath)}\u202C`}</span>
+                              </Show>
+                              <span data-slot="apply-patch-filename">{getFilename(file.relativePath)}</span>
+                            </div>
+                          </div>
                           <div data-slot="apply-patch-trigger-actions">
                             <Switch>
-                              <Match when={file.type === "delete"}>
-                                <span data-slot="apply-patch-file-action" data-type="delete">
-                                  {i18n.t("ui.patch.action.deleted")}
-                                </span>
-                              </Match>
                               <Match when={file.type === "add"}>
-                                <span data-slot="apply-patch-file-action" data-type="add">
+                                <span data-slot="apply-patch-change" data-type="added">
                                   {i18n.t("ui.patch.action.created")}
                                 </span>
                               </Match>
+                              <Match when={file.type === "delete"}>
+                                <span data-slot="apply-patch-change" data-type="removed">
+                                  {i18n.t("ui.patch.action.deleted")}
+                                </span>
+                              </Match>
                               <Match when={file.type === "move"}>
-                                <span data-slot="apply-patch-file-action" data-type="move">
+                                <span data-slot="apply-patch-change" data-type="modified">
                                   {i18n.t("ui.patch.action.moved")}
                                 </span>
                               </Match>
+                              <Match when={true}>
+                                <DiffChanges changes={{ additions: file.additions, deletions: file.deletions }} />
+                              </Match>
                             </Switch>
-                            <Show when={file.type !== "delete"}>
-                              <DiffChanges changes={{ additions: file.additions, deletions: file.deletions }} />
-                            </Show>
-                            <Show when={file.type === "delete"}>
-                              <span data-slot="apply-patch-deletion-count">-{file.deletions}</span>
-                            </Show>
-                            <span data-slot="apply-patch-file-chevron">
-                              <Icon name="chevron-down" size="small" />
-                            </span>
+                            <Icon name="chevron-grabber-vertical" size="small" />
                           </div>
                         </div>
                       </Accordion.Trigger>
