@@ -401,6 +401,50 @@ export function createClient(config: ClientConfig) {
     config: {
       get: () => request<unknown>(config, "/config"),
     },
+
+    find: {
+      /**
+       * Search for files and directories using fuzzy matching.
+       * Supports request cancellation via AbortSignal.
+       *
+       * @param params.query - Search query/pattern
+       * @param params.dirs - Include directories in results (default: "true")
+       * @param params.type - Filter by type: "file" or "directory"
+       * @param params.limit - Max results (1-200, default: 10)
+       * @param signal - Optional AbortSignal to cancel the request
+       * @returns Promise resolving to array of file paths
+       *
+       * @example
+       * // Basic search
+       * const results = await client.find.files({ query: "app" })
+       *
+       * @example
+       * // Search with cancellation
+       * const controller = new AbortController()
+       * client.find.files({ query: "component" }, controller.signal)
+       *   .then(results => console.log(results))
+       *   .catch(err => {
+       *     if (err.name === 'AbortError') console.log('Cancelled')
+       *   })
+       * controller.abort()  // Cancel the request
+       */
+      files: (
+        params: {
+          query: string
+          dirs?: "true" | "false"
+          type?: "file" | "directory"
+          limit?: number
+        },
+        signal?: AbortSignal,
+      ) => {
+        const query = new URLSearchParams()
+        query.set("query", params.query)
+        if (params.dirs !== undefined) query.set("dirs", params.dirs)
+        if (params.type !== undefined) query.set("type", params.type)
+        if (params.limit !== undefined) query.set("limit", String(params.limit))
+        return request<string[]>(config, `/find/file?${query.toString()}`, signal ? { signal } : {})
+      },
+    },
   }
 }
 

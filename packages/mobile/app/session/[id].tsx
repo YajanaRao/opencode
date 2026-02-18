@@ -32,6 +32,8 @@ import {
   type SlashCommand,
   type Attachment,
 } from "../../src/components/chat"
+import { AtPopover, type FileItem } from "../../src/components/chat/AtPopover"
+import { FileContextPills, type FileContextItem } from "../../src/components/chat/FileContextPills"
 import { useSessions } from "../../src/stores/sessions"
 import { useEvents, refreshPending } from "../../src/stores/events"
 import { useConnections } from "../../src/stores/connections"
@@ -159,6 +161,14 @@ export default function SessionScreen() {
   const slashActive = input.startsWith("/") && !input.includes(" ")
   const slashQuery = slashActive ? input.slice(1) : ""
 
+  // @ file mention state
+  const [atActive, setAtActive] = useState(false)
+  const [atQuery, setAtQuery] = useState("")
+  const [atResults, setAtResults] = useState<FileItem[]>([])
+  const [atLoading, setAtLoading] = useState(false)
+  const [fileContext, setFileContext] = useState<FileContextItem[]>([])
+  const atControllerRef = useRef<AbortController | null>(null)
+
   const allCommands = useMemo<SlashCommand[]>(() => {
     const custom: SlashCommand[] = serverCommands.map((cmd) => ({
       trigger: cmd.name,
@@ -239,6 +249,79 @@ export default function SessionScreen() {
     },
     [router, cycleAgent],
   )
+
+  // @ file mention detection and search
+  useEffect(() => {
+    const atMatch = input.match(/@(\S*)$/)
+
+    if (atMatch) {
+      const query = atMatch[1]
+      setAtQuery(query)
+      setAtActive(true)
+
+      // Cancel previous search
+      atControllerRef.current?.abort()
+
+      const controller = new AbortController()
+      atControllerRef.current = controller
+
+      // Debounce search
+      const timeoutId = setTimeout(() => {
+        if (!client) return
+
+        setAtLoading(true)
+        client.find
+          .files({ query, dirs: "true", limit: 10 }, controller.signal)
+          .then((paths) => {
+            const items: FileItem[] = paths.map((path) => ({
+              path,
+              display: path,
+            }))
+            setAtResults(items)
+            setAtLoading(false)
+          })
+          .catch((err) => {
+            if (err.name !== "AbortError") {
+              console.error("File search failed:", err)
+              setAtLoading(false)
+            }
+          })
+      }, 200)
+
+      return () => {
+        clearTimeout(timeoutId)
+        controller.abort()
+      }
+    } else {
+      setAtActive(false)
+      setAtQuery("")
+      setAtResults([])
+    }
+  }, [input, client])
+
+  // @ file selection handler
+  const handleAtSelect = useCallback(
+    (file: FileItem) => {
+      // Remove the @query from input
+      const newInput = input.replace(/@(\S*)$/, "")
+      setInput(newInput)
+
+      // Add to file context if not already there
+      setFileContext((prev) => {
+        const exists = prev.some((f) => f.path === file.path)
+        if (exists) return prev
+        return [...prev, { path: file.path, display: file.display }]
+      })
+
+      // Close popover
+      setAtActive(false)
+    },
+    [input],
+  )
+
+  const removeFileContext = useCallback((index: number) => {
+    setFileContext((prev) => prev.filter((_, i) => i !== index))
+  }, [])
 
   // --- Image picking ---
 
@@ -327,17 +410,19 @@ export default function SessionScreen() {
 
   // --- Send ---
   const handleSend = async () => {
-    if (!input.trim() && attachments.length === 0) return
+    if (!input.trim() && attachments.length === 0 && fileContext.length === 0) return
     const authenticated = await authenticateForMessage()
     if (!authenticated) return
 
     const text = input.trim()
     const files = [...attachments]
+    const context = [...fileContext]
     setInput("")
     setAttachments([])
+    setFileContext([])
 
     // Server slash commands (no attachments for commands)
-    if (text.startsWith("/") && files.length === 0) {
+    if (text.startsWith("/") && files.length === 0 && context.length === 0) {
       const [cmdName, ...args] = text.split(" ")
       const name = cmdName.slice(1)
       const match = serverCommands.find((c) => c.name === name)
@@ -356,7 +441,7 @@ export default function SessionScreen() {
 
     // Messages are queued server-side when the session is busy.
     // No need to abort - just send and it will be processed after current response.
-    await sendMessage(text, model || undefined, agent || undefined, files)
+    await sendMessage(text, model || undefined, agent || undefined, files, context)
   }
 
   // In inverted mode, offset 0 = bottom. Show scroll button when scrolled away from bottom.
@@ -581,6 +666,9 @@ export default function SessionScreen() {
           <SlashPopover query={slashQuery} commands={allCommands} isDark={isDark} onSelect={handleSlashSelect} />
         )}
 
+        {/* @ file mention popover */}
+        <AtPopover visible={atActive} query={atQuery} files={atResults} loading={atLoading} onSelect={handleAtSelect} />
+
         {/* Agent/model toolbar */}
         <View
           style={[s.toolbar, { backgroundColor: colors["surface-raised-base"], borderTopColor: colors["surface"] }]}
@@ -609,6 +697,9 @@ export default function SessionScreen() {
         {/* Attachment preview */}
         <ImageAttachments attachments={attachments} isDark={isDark} onRemove={removeAttachment} />
 
+        {/* File context pills */}
+        <FileContextPills files={fileContext} onRemove={removeFileContext} />
+
         {/* Input */}
         <View
           style={[
@@ -634,10 +725,10 @@ export default function SessionScreen() {
                   backgroundColor: colors["surface-weak"],
                   color: colors["text-base"],
                 },
-                speech.listening && { borderWidth: 1, borderColor: colors["border-critical-base"] },
+                speech.listening && { borderWidth: 1, borderColor: colors["border-weak-base"] },
               ]}
               placeholder={speech.listening ? "Listening..." : isSending ? "Send a follow-up..." : "Type a message..."}
-              placeholderTextColor={speech.listening ? colors["text-on-critical-base"] : colors["text-weaker"]}
+              placeholderTextColor={speech.listening ? colors["text-base"] : colors["text-weak"]}
               value={speech.listening ? speech.transcript : input}
               onChangeText={speech.listening ? undefined : setInput}
               editable={!speech.listening}
@@ -646,11 +737,8 @@ export default function SessionScreen() {
             />
             {/* Stop button: only when busy and no input */}
             {isSending && !input.trim() && attachments.length === 0 && !speech.listening && (
-              <TouchableOpacity
-                style={[s.stopBtn, { backgroundColor: colors["surface-critical-base"] }]}
-                onPress={abortSession}
-              >
-                <Ionicons name="stop" size={20} color={colors["text-on-critical-base"]} />
+              <TouchableOpacity style={[s.stopBtn, { backgroundColor: colors["surface-base"] }]} onPress={abortSession}>
+                <Ionicons name="stop" size={20} color={colors["text-base"]} />
               </TouchableOpacity>
             )}
             {/* Mic button: when no input, not sending, and not listening */}
@@ -662,7 +750,7 @@ export default function SessionScreen() {
             {/* Listening indicator: tap to stop */}
             {speech.listening && (
               <TouchableOpacity
-                style={[s.micBtnActive, { backgroundColor: colors["surface-critical-base"] }]}
+                style={[s.micBtnActive, { backgroundColor: colors["surface-base"] }]}
                 onPress={speech.stop}
               >
                 <Ionicons name="mic" size={22} color={colors["text-base"]} />

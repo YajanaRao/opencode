@@ -43,6 +43,7 @@ interface SessionsState {
     model?: { providerID: string; modelID: string },
     agent?: string,
     files?: Array<{ uri: string; mime: string; filename?: string; base64?: string }>,
+    context?: Array<{ path: string }>,
   ) => Promise<void>
   abortSession: () => Promise<void>
   refreshMessages: () => Promise<void>
@@ -203,7 +204,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
   },
 
-  sendMessage: async (text, model, agent, files) => {
+  sendMessage: async (text, model, agent, files, context) => {
     const client = clientFor(get().currentSession?.directory)
     const session = get().currentSession
     if (!client || !session) {
@@ -246,6 +247,20 @@ export const useSessions = create<SessionsState>((set, get) => ({
           })
         }
       }
+      if (context) {
+        for (let i = 0; i < context.length; i++) {
+          const c = context[i]
+          const filename = c.path.split("/").pop() || c.path
+          optimisticParts.push({
+            id: `temp-part-context-${ts}-${i}`,
+            messageID: userMessage.id,
+            type: "file",
+            mime: "text/plain",
+            url: `file://${c.path}`,
+            filename,
+          })
+        }
+      }
 
       set((state) => ({
         messages: [...state.messages, userMessage],
@@ -263,6 +278,12 @@ export const useSessions = create<SessionsState>((set, get) => ({
         for (const f of files) {
           const url = f.base64 ? `data:${f.mime};base64,${f.base64}` : f.uri
           promptParts.push({ type: "file", mime: f.mime, url, filename: f.filename })
+        }
+      }
+      if (context) {
+        for (const c of context) {
+          const filename = c.path.split("/").pop() || c.path
+          promptParts.push({ type: "file", mime: "text/plain", url: `file://${c.path}`, filename })
         }
       }
 
