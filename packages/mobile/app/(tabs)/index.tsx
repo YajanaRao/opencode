@@ -5,7 +5,6 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
   RefreshControl,
   ActivityIndicator,
   Modal,
@@ -14,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useSessions } from "../../src/stores/sessions"
@@ -21,6 +21,7 @@ import { useConnections } from "../../src/stores/connections"
 import type BottomSheet from "@gorhom/bottom-sheet"
 import type { Session } from "../../src/lib/sdk"
 import { DirectorySwitcher } from "../../src/components/chat"
+import { useTheme } from "@/lib/theme"
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp)
@@ -37,15 +38,14 @@ function formatTime(timestamp: number): string {
 
 function SessionItem({
   session,
-  isDark,
   onRename,
   onDelete,
 }: {
   session: Session
-  isDark: boolean
   onRename: () => void
   onDelete: () => void
 }) {
+  const { colors } = useTheme()
   const onPress = () => {
     router.push(`/session/${session.id}`)
   }
@@ -63,30 +63,30 @@ function SessionItem({
 
   return (
     <TouchableOpacity
-      style={[styles.sessionItem, isDark && styles.sessionItemDark]}
+      style={[styles.sessionItem, { backgroundColor: colors["surface-base"] }]}
       onPress={onPress}
       onLongPress={onLongPress}
     >
       <View style={styles.sessionContent}>
         <View style={styles.sessionHeader}>
-          <Text style={[styles.sessionTitle, isDark && styles.textDark]} numberOfLines={1}>
+          <Text style={[styles.sessionTitle, { color: colors["text-base"] }]} numberOfLines={1}>
             {session.title || "Untitled Session"}
           </Text>
         </View>
         <View style={styles.sessionMetaRow}>
-          <Text style={[styles.sessionMeta, isDark && styles.metaDark]}>
+          <Text style={[styles.sessionMeta, { color: colors["text-weak"] }]}>
             {formatTime(session.time.updated)}
             {session.summary && ` · ${session.summary.files} files`}
           </Text>
           {shortDir && (
-            <View style={styles.sessionDirBadge}>
-              <Ionicons name="folder-outline" size={12} color={isDark ? "#888888" : "#666666"} />
-              <Text style={[styles.sessionDirText, isDark && styles.metaDark]}>{shortDir}</Text>
+            <View style={[styles.sessionDirBadge, { backgroundColor: colors["surface-weak"] }]}>
+              <Ionicons name="folder-outline" size={12} color={colors["text-weak"]} />
+              <Text style={[styles.sessionDirText, { color: colors["text-weak"] }]}>{shortDir}</Text>
             </View>
           )}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={isDark ? "#666666" : "#999999"} />
+      <Ionicons name="chevron-forward" size={20} color={colors["icon-weak-base"]} />
     </TouchableOpacity>
   )
 }
@@ -103,8 +103,7 @@ function getShortPath(
 }
 
 export default function SessionsScreen() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
+  const { colors } = useTheme()
   const [showNewSession, setShowNewSession] = useState(false)
   const [customDir, setCustomDir] = useState("")
   const [isCreating, setIsCreating] = useState(false)
@@ -237,51 +236,58 @@ export default function SessionsScreen() {
 
   if (!activeConnection) {
     return (
-      <View style={[styles.emptyContainer, isDark && styles.containerDark]}>
-        <Ionicons name="server-outline" size={64} color={isDark ? "#444444" : "#cccccc"} />
-        <Text style={[styles.emptyTitle, isDark && styles.textDark]}>No Connection</Text>
-        <Text style={[styles.emptySubtitle, isDark && styles.metaDark]}>Add a server connection to get started</Text>
+      <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors["background-base"] }]} edges={["top"]}>
+        <Ionicons name="server-outline" size={64} color={colors["icon-weak-base"]} />
+        <Text style={[styles.emptyTitle, { color: colors["text-base"] }]}>No Connection</Text>
+        <Text style={[styles.emptySubtitle, { color: colors["text-weak"] }]}>
+          Add a server connection to get started
+        </Text>
         <TouchableOpacity
-          style={[styles.addButton, isDark && styles.addButtonDark]}
+          style={[styles.addButton, { backgroundColor: colors["surface-interactive-base"] }]}
           onPress={() => router.push("/connection/add")}
         >
-          <Text style={[styles.addButtonText, isDark && styles.addButtonTextDark]}>Add Connection</Text>
+          <Text style={[styles.addButtonText, { color: colors["text-on-interactive-base"] }]}>Add Connection</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     )
   }
 
   const shortPath = getShortPath(currentProject)
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors["background-base"] }]} edges={["top"]}>
       {/* Connection indicator — tap to switch project */}
       <TouchableOpacity
-        style={[styles.connectionBar, isDark && styles.connectionBarDark]}
+        style={[styles.connectionBar]}
         onPress={() => dirSheetRef.current?.expand()}
         onLongPress={() => router.push("/(tabs)/connections")}
         activeOpacity={0.7}
       >
         <View style={styles.connectionInfo}>
-          <View style={[styles.connectionDot, { backgroundColor: "#22c55e" }]} />
-          <Text style={[styles.connectionName, isDark && styles.textDark]} numberOfLines={1}>
+          <View style={[styles.connectionDot, { backgroundColor: colors["text-base"] }]} />
+          <Text style={[styles.connectionName, { color: colors["text-strong"] }]} numberOfLines={1}>
             {activeConnection.name}
           </Text>
           {shortPath && (
             <>
-              <Ionicons name="folder" size={14} color={isDark ? "#888888" : "#666666"} />
-              <Text style={[styles.projectPath, isDark && styles.metaDark]} numberOfLines={1}>
+              <Ionicons name="folder" size={14} color={colors["icon-base"]} />
+              <Text style={[styles.projectPath, { color: colors["text-weak"] }]} numberOfLines={1}>
                 {shortPath}
               </Text>
             </>
           )}
         </View>
-        <Ionicons name="swap-horizontal-outline" size={16} color={isDark ? "#666666" : "#999999"} />
+        <Ionicons name="swap-horizontal-outline" size={16} color={colors["icon-weak-base"]} />
       </TouchableOpacity>
 
       {error && (
-        <View style={styles.errorBar}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View
+          style={[
+            styles.errorBar,
+            { backgroundColor: colors["surface-critical-weak"], borderBottomColor: colors["border-critical-base"] },
+          ]}
+        >
+          <Text style={[styles.errorText, { color: colors["text-on-critical-base"] }]}>{error}</Text>
         </View>
       )}
 
@@ -289,24 +295,19 @@ export default function SessionsScreen() {
         data={sessions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <SessionItem
-            session={item}
-            isDark={isDark}
-            onRename={() => handleRename(item)}
-            onDelete={() => handleDelete(item)}
-          />
+          <SessionItem session={item} onRename={() => handleRename(item)} onDelete={() => handleDelete(item)} />
         )}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? "#ffffff" : "#0a0a0a"} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors["icon-base"]} />
         }
         ListEmptyComponent={
           isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
+              <ActivityIndicator size="large" color={colors["icon-base"]} />
             </View>
           ) : (
             <View style={styles.emptyList}>
-              <Text style={[styles.emptyListText, isDark && styles.metaDark]}>No sessions yet</Text>
+              <Text style={[styles.emptyListText, { color: colors["text-weak"] }]}>No sessions yet</Text>
             </View>
           )
         }
@@ -315,44 +316,44 @@ export default function SessionsScreen() {
 
       {/* FAB to create new session */}
       <TouchableOpacity
-        style={[styles.fab, isDark && styles.fabDark]}
+        style={[styles.fab, { backgroundColor: colors["surface-interactive-base"] }]}
         onPress={onFabPress}
         onLongPress={onFabLongPress}
         delayLongPress={500}
       >
-        <Ionicons name="add" size={28} color={isDark ? "#0a0a0a" : "#ffffff"} />
+        <Ionicons name="add" size={28} color={colors["text-on-interactive-base"]} />
       </TouchableOpacity>
 
       {/* New Session Info Modal */}
       <Modal visible={showNewSession} animationType="slide" transparent>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <TouchableOpacity style={styles.modalDismiss} activeOpacity={1} onPress={() => setShowNewSession(false)} />
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+          <View style={[styles.modalContent, { backgroundColor: colors["surface-base"] }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, isDark && styles.textDark]}>New Session</Text>
+              <Text style={[styles.modalTitle, { color: colors["text-base"] }]}>New Session</Text>
               <TouchableOpacity onPress={() => setShowNewSession(false)}>
-                <Ionicons name="close" size={24} color={isDark ? "#ffffff" : "#0a0a0a"} />
+                <Ionicons name="close" size={24} color={colors["text-base"]} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
               {/* Current directory */}
-              <Text style={[styles.modalLabel, isDark && styles.metaDark]}>Current Directory</Text>
-              <View style={[styles.modalDirBox, isDark && styles.modalDirBoxDark]}>
-                <Ionicons name="folder" size={20} color={isDark ? "#888888" : "#666666"} />
-                <Text style={[styles.modalDirText, isDark && styles.textDark]} numberOfLines={2}>
+              <Text style={[styles.modalLabel, { color: colors["text-weak"] }]}>Current Directory</Text>
+              <View style={[styles.modalDirBox, { backgroundColor: colors["surface-weak"] }]}>
+                <Ionicons name="folder" size={20} color={colors["icon-weak-base"]} />
+                <Text style={[styles.modalDirText, { color: colors["text-base"] }]} numberOfLines={2}>
                   {currentProject?.path?.absolute || activeConnection?.directory || "Server default"}
                 </Text>
               </View>
 
               {/* Custom directory input */}
-              <Text style={[styles.modalLabel, isDark && styles.metaDark, { marginTop: 16 }]}>
+              <Text style={[styles.modalLabel, { color: colors["text-weak"], marginTop: 16 }]}>
                 Or use a different folder
               </Text>
               <TextInput
-                style={[styles.modalInput, isDark && styles.modalInputDark]}
+                style={[styles.modalInput, { backgroundColor: colors["surface-weak"], color: colors["text-base"] }]}
                 placeholder={serverHome ? `${serverHome}/...` : "/path/to/project"}
-                placeholderTextColor={isDark ? "#666666" : "#999999"}
+                placeholderTextColor={colors["text-weak"]}
                 value={customDir}
                 onChangeText={(text) => {
                   // Expand ~ to server home directory
@@ -371,16 +372,16 @@ export default function SessionsScreen() {
               {serverHome && (
                 <View style={styles.pathChips}>
                   <TouchableOpacity
-                    style={[styles.pathChip, isDark && styles.pathChipDark]}
+                    style={[styles.pathChip, { backgroundColor: colors["surface-interactive-weak"] }]}
                     onPress={() => setCustomDir(serverHome)}
                   >
-                    <Text style={[styles.pathChipText, isDark && styles.pathChipTextDark]}>~</Text>
+                    <Text style={[styles.pathChipText, { color: colors["text-interactive-base"] }]}>~</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.pathChip, isDark && styles.pathChipDark]}
+                    style={[styles.pathChip, { backgroundColor: colors["surface-interactive-weak"] }]}
                     onPress={() => setCustomDir(serverHome + "/")}
                   >
-                    <Text style={[styles.pathChipText, isDark && styles.pathChipTextDark]}>~/</Text>
+                    <Text style={[styles.pathChipText, { color: colors["text-interactive-base"] }]}>~/</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -392,16 +393,16 @@ export default function SessionsScreen() {
                   style={[
                     styles.modalButton,
                     styles.modalButtonPrimary,
-                    isDark && styles.modalButtonPrimaryDark,
+                    { backgroundColor: colors["surface-interactive-base"] },
                     styles.modalButtonFull,
                   ]}
                   onPress={() => onCreateInDirectory(customDir)}
                   disabled={isCreating}
                 >
                   {isCreating ? (
-                    <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
+                    <ActivityIndicator size="small" color={colors["text-on-interactive-base"]} />
                   ) : (
-                    <Text style={[styles.modalButtonTextPrimary, isDark && styles.modalButtonTextPrimaryDark]}>
+                    <Text style={[styles.modalButtonTextPrimary, { color: colors["text-on-interactive-base"] }]}>
                       Create in {customDir.split("/").filter(Boolean).pop() || customDir}
                     </Text>
                   )}
@@ -411,16 +412,16 @@ export default function SessionsScreen() {
                   style={[
                     styles.modalButton,
                     styles.modalButtonPrimary,
-                    isDark && styles.modalButtonPrimaryDark,
+                    { backgroundColor: colors["surface-interactive-base"] },
                     styles.modalButtonFull,
                   ]}
                   onPress={() => onCreateInDirectory()}
                   disabled={isCreating}
                 >
                   {isCreating ? (
-                    <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
+                    <ActivityIndicator size="small" color={colors["text-on-interactive-base"]} />
                   ) : (
-                    <Text style={[styles.modalButtonTextPrimary, isDark && styles.modalButtonTextPrimaryDark]}>
+                    <Text style={[styles.modalButtonTextPrimary, { color: colors["text-on-interactive-base"] }]}>
                       Create Session
                     </Text>
                   )}
@@ -438,10 +439,10 @@ export default function SessionsScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <TouchableOpacity style={styles.modalDismiss} activeOpacity={1} onPress={() => setRenaming(null)} />
-          <View style={[styles.renameCard, isDark && styles.renameCardDark]}>
-            <Text style={[styles.renameTitle, isDark && styles.textDark]}>Rename Session</Text>
+          <View style={[styles.renameCard, { backgroundColor: colors["surface-base"] }]}>
+            <Text style={[styles.renameTitle, { color: colors["text-base"] }]}>Rename Session</Text>
             <TextInput
-              style={[styles.modalInput, isDark && styles.modalInputDark]}
+              style={[styles.modalInput, { backgroundColor: colors["surface-weak"], color: colors["text-base"] }]}
               value={renameText}
               onChangeText={setRenameText}
               onSubmitEditing={submitRename}
@@ -453,14 +454,18 @@ export default function SessionsScreen() {
             />
             <View style={styles.renameActions}>
               <TouchableOpacity style={[styles.renameBtn, styles.renameBtnCancel]} onPress={() => setRenaming(null)}>
-                <Text style={styles.renameBtnCancelText}>Cancel</Text>
+                <Text style={[styles.renameBtnCancelText, { color: colors["text-weak"] }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.renameBtn, styles.modalButtonPrimary, isDark && styles.modalButtonPrimaryDark]}
+                style={[
+                  styles.renameBtn,
+                  styles.modalButtonPrimary,
+                  { backgroundColor: colors["surface-interactive-base"] },
+                ]}
                 onPress={submitRename}
                 disabled={!renameText.trim()}
               >
-                <Text style={[styles.modalButtonTextPrimary, isDark && styles.modalButtonTextPrimaryDark]}>Save</Text>
+                <Text style={[styles.modalButtonTextPrimary, { color: colors["text-on-interactive-base"] }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -474,20 +479,15 @@ export default function SessionsScreen() {
         current={activeConnection?.directory}
         recents={recentDirectories}
         serverHome={serverHome}
-        isDark={isDark}
         onSwitch={handleSwitchDirectory}
       />
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  containerDark: {
-    backgroundColor: "#0a0a0a",
   },
   connectionBar: {
     flexDirection: "row",
@@ -495,11 +495,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-  },
-  connectionBarDark: {
-    borderBottomColor: "#1a1a1a",
   },
   connectionInfo: {
     flexDirection: "row",
@@ -514,36 +509,22 @@ const styles = StyleSheet.create({
   connectionName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#0a0a0a",
-  },
-  connectionUrl: {
-    fontSize: 12,
-    color: "#666666",
   },
   projectPath: {
     fontSize: 13,
-    color: "#666666",
     flex: 1,
   },
   errorBar: {
-    backgroundColor: "#fef2f2",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#fecaca",
   },
   errorText: {
-    color: "#dc2626",
     fontSize: 14,
   },
   sessionItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-  },
-  sessionItemDark: {
-    borderBottomColor: "#1a1a1a",
   },
   sessionContent: {
     flex: 1,
@@ -557,72 +538,51 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#0a0a0a",
     marginBottom: 4,
-  },
-  textDark: {
-    color: "#ffffff",
   },
   sessionMeta: {
     fontSize: 13,
-    color: "#666666",
   },
   sessionMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
   },
   sessionDirBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#f5f5f5",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   sessionDirText: {
     fontSize: 11,
-    color: "#666666",
-  },
-  metaDark: {
-    color: "#888888",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 32,
-    backgroundColor: "#ffffff",
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: "600",
     marginTop: 16,
-    color: "#0a0a0a",
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#666666",
     marginTop: 8,
     textAlign: "center",
   },
   addButton: {
-    backgroundColor: "#0a0a0a",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     marginTop: 24,
   },
-  addButtonDark: {
-    backgroundColor: "#ffffff",
-  },
   addButtonText: {
-    color: "#ffffff",
     fontWeight: "600",
-  },
-  addButtonTextDark: {
-    color: "#0a0a0a",
   },
   loadingContainer: {
     flex: 1,
@@ -638,7 +598,6 @@ const styles = StyleSheet.create({
   },
   emptyListText: {
     fontSize: 16,
-    color: "#666666",
   },
   emptyContent: {
     flex: 1,
@@ -650,7 +609,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#0a0a0a",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -658,9 +616,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-  },
-  fabDark: {
-    backgroundColor: "#ffffff",
   },
   // Modal styles
   modalOverlay: {
@@ -672,14 +627,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContent: {
-    backgroundColor: "#ffffff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
     paddingBottom: 40,
-  },
-  modalContentDark: {
-    backgroundColor: "#1a1a1a",
   },
   modalHeader: {
     flexDirection: "row",
@@ -690,7 +641,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#0a0a0a",
   },
   modalBody: {
     marginBottom: 24,
@@ -698,7 +648,6 @@ const styles = StyleSheet.create({
   modalLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#666666",
     marginBottom: 8,
     textTransform: "uppercase",
   },
@@ -706,29 +655,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#f5f5f5",
     padding: 16,
     borderRadius: 12,
   },
-  modalDirBoxDark: {
-    backgroundColor: "#2a2a2a",
-  },
   modalDirText: {
     fontSize: 15,
-    color: "#0a0a0a",
     flex: 1,
   },
   modalInput: {
-    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: "#0a0a0a",
-  },
-  modalInputDark: {
-    backgroundColor: "#2a2a2a",
-    color: "#ffffff",
   },
   pathChips: {
     flexDirection: "row",
@@ -738,24 +676,11 @@ const styles = StyleSheet.create({
   pathChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#e8e5f0",
     borderRadius: 16,
-  },
-  pathChipDark: {
-    backgroundColor: "#2a2040",
   },
   pathChipText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#6d28d9",
-  },
-  pathChipTextDark: {
-    color: "#c4b5fd",
-  },
-  modalHint: {
-    fontSize: 13,
-    color: "#666666",
-    marginTop: 12,
   },
   modalActions: {
     flexDirection: "row",
@@ -770,30 +695,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
   },
-  modalButtonSecondary: {
-    backgroundColor: "#f5f5f5",
-  },
-  modalButtonSecondaryDark: {
-    backgroundColor: "#2a2a2a",
-  },
-  modalButtonPrimary: {
-    backgroundColor: "#0a0a0a",
-  },
-  modalButtonPrimaryDark: {
-    backgroundColor: "#ffffff",
-  },
-  modalButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0a0a0a",
-  },
+  modalButtonPrimary: {},
   modalButtonTextPrimary: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#ffffff",
-  },
-  modalButtonTextPrimaryDark: {
-    color: "#0a0a0a",
   },
   modalButtonFull: {
     flex: 0,
@@ -801,19 +706,14 @@ const styles = StyleSheet.create({
   },
   // Rename modal
   renameCard: {
-    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 32,
     gap: 16,
   },
-  renameCardDark: {
-    backgroundColor: "#1a1a1a",
-  },
   renameTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#0a0a0a",
   },
   renameActions: {
     flexDirection: "row",
@@ -831,6 +731,5 @@ const styles = StyleSheet.create({
   renameBtnCancelText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#888888",
   },
 })

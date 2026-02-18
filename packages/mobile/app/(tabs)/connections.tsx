@@ -1,27 +1,28 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, useColorScheme, Alert } from "react-native"
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useConnections } from "../../src/stores/connections"
 import { useSettings } from "../../src/stores/settings"
+import { useTheme } from "@/lib/theme"
 import type { ServerConnection } from "../../src/lib/types"
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const
 
 function ConnectionItem({
   connection,
-  isDark,
   isActive,
   onSelect,
   onEdit,
   onDelete,
 }: {
   connection: ServerConnection
-  isDark: boolean
   isActive: boolean
   onSelect: () => void
   onEdit: () => void
   onDelete: () => void
 }) {
+  const { colors } = useTheme()
   const typeIcon = connection.type === "local" ? "wifi" : connection.type === "tunnel" ? "globe" : "cloud"
 
   const handleLongPress = () => {
@@ -36,57 +37,42 @@ function ConnectionItem({
     <TouchableOpacity
       style={[
         styles.connectionItem,
-        isDark && styles.connectionItemDark,
-        isActive && styles.connectionItemActive,
-        isActive && isDark && styles.connectionItemActiveDark,
+        { borderBottomColor: colors["border-weak-base"] },
+        isActive && { backgroundColor: colors["surface-weak"] },
       ]}
       onPress={onSelect}
       onLongPress={handleLongPress}
     >
-      <View style={styles.connectionIcon}>
-        <Ionicons name={typeIcon} size={24} color={isActive ? "#22c55e" : isDark ? "#888888" : "#666666"} />
+      <View style={[styles.connectionIcon, { backgroundColor: colors["surface-weak"] }]}>
+        <Ionicons name={typeIcon} size={24} color={isActive ? colors["icon-success-base"] : colors["icon-weak-base"]} />
       </View>
       <View style={styles.connectionContent}>
         <View style={styles.connectionHeader}>
-          <Text
-            style={[
-              styles.connectionName,
-              isDark && styles.textDark,
-              isActive && styles.connectionNameActive,
-              isActive && isDark && styles.connectionNameActiveDark,
-            ]}
-          >
-            {connection.name}
-          </Text>
+          <Text style={[styles.connectionName, { color: colors["text-base"] }]}>{connection.name}</Text>
           {isActive && (
-            <View style={[styles.activeBadge, isDark && styles.activeBadgeDark]}>
-              <Text style={[styles.activeBadgeText, isDark && styles.activeBadgeTextDark]}>Active</Text>
+            <View style={[styles.activeBadge, { backgroundColor: colors["surface-success-strong"] }]}>
+              <Text style={[styles.activeBadgeText, { color: colors["text-strong"] }]}>Active</Text>
             </View>
           )}
         </View>
-        <Text
-          style={[styles.connectionUrl, isDark && styles.metaDark, isActive && styles.connectionUrlActive]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.connectionUrl, { color: colors["text-weak"] }]} numberOfLines={1}>
           {connection.url}
         </Text>
         {connection.lastConnected && (
-          <Text style={[styles.connectionMeta, isDark && styles.metaDark]}>
+          <Text style={[styles.connectionMeta, { color: colors["text-weak"] }]}>
             Last connected: {new Date(connection.lastConnected).toLocaleDateString()}
           </Text>
         )}
       </View>
       <TouchableOpacity onPress={onEdit} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Ionicons name="ellipsis-vertical" size={20} color={isDark ? "#666666" : "#999999"} />
+        <Ionicons name="ellipsis-vertical" size={20} color={colors["text-base"]} />
       </TouchableOpacity>
     </TouchableOpacity>
   )
 }
 
 export default function ConnectionsScreen() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-
+  const { colors } = useTheme()
   const { connections, activeConnection, setActiveConnection, removeConnection } = useConnections()
   const { pageSize, setPageSize } = useSettings()
 
@@ -102,14 +88,13 @@ export default function ConnectionsScreen() {
   }
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors["background-base"] }]} edges={["top"]}>
       <FlatList
         data={connections}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <ConnectionItem
             connection={item}
-            isDark={isDark}
             isActive={activeConnection?.id === item.id}
             onSelect={() => setActiveConnection(item.id)}
             onEdit={() => router.push(`/connection/${item.id}`)}
@@ -118,25 +103,27 @@ export default function ConnectionsScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="server-outline" size={64} color={isDark ? "#444444" : "#cccccc"} />
-            <Text style={[styles.emptyTitle, isDark && styles.textDark]}>No Connections</Text>
-            <Text style={[styles.emptySubtitle, isDark && styles.metaDark]}>
+            <Ionicons name="server-outline" size={64} color={colors["icon-disabled"]} />
+            <Text style={[styles.emptyTitle, { color: colors["text-base"] }]}>No Connections</Text>
+            <Text style={[styles.emptySubtitle, { color: colors["text-weak"] }]}>
               Add a connection to your OpenCode server
             </Text>
           </View>
         }
         ListHeaderComponent={
-          <View style={[styles.header, isDark && styles.headerDark]}>
-            <Text style={[styles.headerText, isDark && styles.metaDark]}>Tap to switch, long press for options</Text>
+          <View style={[styles.header, { borderBottomColor: colors["border-weak-base"] }]}>
+            <Text style={[styles.headerText, { color: colors["text-weak"] }]}>
+              Tap to switch, long press for options
+            </Text>
           </View>
         }
         ListFooterComponent={
-          <View style={[styles.settingsSection, isDark && styles.settingsSectionDark]}>
-            <Text style={[styles.settingsTitle, isDark && styles.textDark]}>Preferences</Text>
+          <View style={[styles.settingsSection, { borderTopColor: colors["border-weak-base"] }]}>
+            <Text style={[styles.settingsTitle, { color: colors["text-base"] }]}>Preferences</Text>
             <View style={styles.settingRow}>
               <View style={styles.settingLabel}>
-                <Ionicons name="layers-outline" size={18} color={isDark ? "#888888" : "#666666"} />
-                <Text style={[styles.settingText, isDark && styles.textDark]}>Messages per page</Text>
+                <Ionicons name="layers-outline" size={18} color={colors["icon-weak-base"]} />
+                <Text style={[styles.settingText, { color: colors["text-base"] }]}>Messages per page</Text>
               </View>
               <View style={styles.pagePicker}>
                 {PAGE_SIZE_OPTIONS.map((size) => (
@@ -144,17 +131,22 @@ export default function ConnectionsScreen() {
                     key={size}
                     style={[
                       styles.pageOption,
-                      isDark && styles.pageOptionDark,
-                      pageSize === size && styles.pageOptionActive,
-                      pageSize === size && isDark && styles.pageOptionActiveDark,
+                      {
+                        borderColor: colors["border-weak-base"],
+                        backgroundColor: colors["surface-weak"],
+                      },
+                      pageSize === size && {
+                        backgroundColor: colors["surface-interactive-base"],
+                        borderColor: colors["border-interactive-base"],
+                      },
                     ]}
                     onPress={() => setPageSize(size)}
                   >
                     <Text
                       style={[
                         styles.pageOptionText,
-                        isDark && styles.metaDark,
-                        pageSize === size && styles.pageOptionTextActive,
+                        { color: colors["text-weak"] },
+                        pageSize === size && { color: colors["text-on-interactive-base"] },
                       ]}
                     >
                       {size}
@@ -163,7 +155,7 @@ export default function ConnectionsScreen() {
                 ))}
               </View>
             </View>
-            <Text style={[styles.settingHint, isDark && styles.metaDark]}>
+            <Text style={[styles.settingHint, { color: colors["text-weaker"] }]}>
               How many messages to load when opening a session. Lower = faster.
             </Text>
           </View>
@@ -172,54 +164,37 @@ export default function ConnectionsScreen() {
       />
 
       {/* FAB to add connection */}
-      <TouchableOpacity style={[styles.fab, isDark && styles.fabDark]} onPress={() => router.push("/connection/add")}>
-        <Ionicons name="add" size={28} color={isDark ? "#0a0a0a" : "#ffffff"} />
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors["surface-interactive-base"] }]}
+        onPress={() => router.push("/connection/add")}
+      >
+        <Ionicons name="add" size={28} color={colors["text-on-interactive-base"]} />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  containerDark: {
-    backgroundColor: "#0a0a0a",
   },
   header: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-  },
-  headerDark: {
-    borderBottomColor: "#1a1a1a",
   },
   headerText: {
     fontSize: 13,
-    color: "#666666",
   },
   connectionItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-  },
-  connectionItemDark: {
-    borderBottomColor: "#1a1a1a",
-  },
-  connectionItemActive: {
-    backgroundColor: "#f0fdf4",
-  },
-  connectionItemActiveDark: {
-    backgroundColor: "#1a2e1a",
   },
   connectionIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -235,49 +210,23 @@ const styles = StyleSheet.create({
   connectionName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#0a0a0a",
-  },
-  connectionNameActive: {
-    color: "#0a0a0a",
-  },
-  connectionNameActiveDark: {
-    color: "#ffffff",
-  },
-  textDark: {
-    color: "#ffffff",
   },
   activeBadge: {
-    backgroundColor: "#22c55e",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
   },
-  activeBadgeDark: {
-    backgroundColor: "#16a34a",
-  },
   activeBadgeText: {
-    color: "#ffffff",
     fontSize: 11,
     fontWeight: "600",
   },
-  activeBadgeTextDark: {
-    color: "#ffffff",
-  },
   connectionUrl: {
     fontSize: 13,
-    color: "#666666",
     marginTop: 2,
-  },
-  connectionUrlActive: {
-    color: "#888888",
   },
   connectionMeta: {
     fontSize: 12,
-    color: "#999999",
     marginTop: 4,
-  },
-  metaDark: {
-    color: "#888888",
   },
   emptyContainer: {
     flex: 1,
@@ -289,11 +238,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     marginTop: 16,
-    color: "#0a0a0a",
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#666666",
     marginTop: 8,
     textAlign: "center",
   },
@@ -307,7 +254,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#0a0a0a",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -316,23 +262,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  fabDark: {
-    backgroundColor: "#ffffff",
-  },
   settingsSection: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
     marginTop: 16,
     gap: 10,
-  },
-  settingsSectionDark: {
-    borderTopColor: "#1a1a1a",
   },
   settingsTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#0a0a0a",
   },
   settingRow: {
     flexDirection: "row",
@@ -346,7 +284,6 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 14,
-    color: "#0a0a0a",
   },
   pagePicker: {
     flexDirection: "row",
@@ -357,31 +294,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e5e5e5",
-    backgroundColor: "#f5f5f5",
-  },
-  pageOptionDark: {
-    borderColor: "#2a2a2a",
-    backgroundColor: "#1a1a1a",
-  },
-  pageOptionActive: {
-    backgroundColor: "#0a0a0a",
-    borderColor: "#0a0a0a",
-  },
-  pageOptionActiveDark: {
-    backgroundColor: "#3b82f6",
-    borderColor: "#3b82f6",
   },
   pageOptionText: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#666666",
-  },
-  pageOptionTextActive: {
-    color: "#ffffff",
   },
   settingHint: {
     fontSize: 12,
-    color: "#999999",
   },
 })

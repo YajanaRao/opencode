@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTheme } from "@/lib/theme"
 import type { Part } from "../../lib/sdk"
 import { DiffView } from "./DiffView"
 
@@ -24,31 +25,32 @@ const TOOL_ICONS: Record<string, string> = {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
 
-function statusColor(status: string): string {
-  if (status === "completed") return "#22c55e"
-  if (status === "error") return "#ef4444"
-  if (status === "running") return "#f59e0b"
-  return "#888888"
+function getStatusColor(status: string, colors: Record<string, string>): string {
+  if (status === "completed") return colors["icon-success-base"]
+  if (status === "error") return colors["icon-critical-base"]
+  if (status === "running") return colors["icon-warning-base"]
+  return colors["icon-weak-base"]
 }
 
 // --- Tool-specific detail renderers ---
 
 function BashDetail({ input, output, isDark }: { input: unknown; output: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const cmd = typeof input === "object" && input !== null ? (input as Record<string, unknown>).command : undefined
   const out = typeof output === "string" ? output : undefined
   return (
     <View style={s.detailSection}>
       {typeof cmd === "string" && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable>
-            <Text style={s.codePrompt}>$ </Text>
+        <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"] }]}>
+          <Text style={[s.codePre, { color: colors["text-base"] }]} selectable>
+            <Text style={[s.codePrompt, { color: colors["text-interactive-base"] }]}>$ </Text>
             {cmd}
           </Text>
         </View>
       )}
       {out !== undefined && out.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={80}>
+        <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"], marginTop: 6 }]}>
+          <Text style={[s.codePre, { color: colors["text-base"] }]} selectable numberOfLines={80}>
             {out}
           </Text>
         </View>
@@ -58,6 +60,7 @@ function BashDetail({ input, output, isDark }: { input: unknown; output: unknown
 }
 
 function ReadDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const file = typeof input === "object" && input !== null ? (input as Record<string, unknown>).filePath : undefined
   const offset = typeof input === "object" && input !== null ? (input as Record<string, unknown>).offset : undefined
   const limit = typeof input === "object" && input !== null ? (input as Record<string, unknown>).limit : undefined
@@ -65,7 +68,14 @@ function ReadDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
   return (
     <View style={s.detailSection}>
       {typeof file === "string" && (
-        <Text style={[s.detailFile, isDark && s.detailFileDark]} selectable numberOfLines={2}>
+        <Text
+          style={[
+            s.detailFile,
+            { color: colors["text-interactive-base"], backgroundColor: colors["surface-interactive-weak"] },
+          ]}
+          selectable
+          numberOfLines={2}
+        >
           {file}
           {range}
         </Text>
@@ -75,18 +85,26 @@ function ReadDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
 }
 
 function WriteDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const file = typeof input === "object" && input !== null ? (input as Record<string, unknown>).filePath : undefined
   const content = typeof input === "object" && input !== null ? (input as Record<string, unknown>).content : undefined
   return (
     <View style={s.detailSection}>
       {typeof file === "string" && (
-        <Text style={[s.detailFile, isDark && s.detailFileDark]} selectable numberOfLines={2}>
+        <Text
+          style={[
+            s.detailFile,
+            { color: colors["text-interactive-base"], backgroundColor: colors["surface-interactive-weak"] },
+          ]}
+          selectable
+          numberOfLines={2}
+        >
           {file}
         </Text>
       )}
       {typeof content === "string" && content.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={40}>
+        <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"], marginTop: 6 }]}>
+          <Text style={[s.codePre, { color: colors["text-base"] }]} selectable numberOfLines={40}>
             {content}
           </Text>
         </View>
@@ -96,6 +114,7 @@ function WriteDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
 }
 
 function EditDetail({ input, output, isDark }: { input: unknown; output: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const file = typeof input === "object" && input !== null ? (input as Record<string, unknown>).filePath : undefined
   const old = typeof input === "object" && input !== null ? (input as Record<string, unknown>).oldString : undefined
   const replacement =
@@ -106,7 +125,14 @@ function EditDetail({ input, output, isDark }: { input: unknown; output: unknown
     return (
       <View style={s.detailSection}>
         {typeof file === "string" && (
-          <Text style={[s.detailFile, isDark && s.detailFileDark]} selectable numberOfLines={2}>
+          <Text
+            style={[
+              s.detailFile,
+              { color: colors["text-interactive-base"], backgroundColor: colors["surface-interactive-weak"] },
+            ]}
+            selectable
+            numberOfLines={2}
+          >
             {file}
           </Text>
         )}
@@ -120,13 +146,20 @@ function EditDetail({ input, output, isDark }: { input: unknown; output: unknown
   return (
     <View style={s.detailSection}>
       {typeof file === "string" && (
-        <Text style={[s.detailFile, isDark && s.detailFileDark]} selectable numberOfLines={2}>
+        <Text
+          style={[
+            s.detailFile,
+            { color: colors["text-interactive-base"], backgroundColor: colors["surface-interactive-weak"] },
+          ]}
+          selectable
+          numberOfLines={2}
+        >
           {file}
         </Text>
       )}
       {text && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={40}>
+        <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"], marginTop: 6 }]}>
+          <Text style={[s.codePre, { color: colors["text-base"] }]} selectable numberOfLines={40}>
             {text}
           </Text>
         </View>
@@ -136,12 +169,13 @@ function EditDetail({ input, output, isDark }: { input: unknown; output: unknown
 }
 
 function PatchDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const patch = typeof input === "object" && input !== null ? (input as Record<string, unknown>).patch : undefined
   return (
     <View style={s.detailSection}>
       {typeof patch === "string" && patch.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={60}>
+        <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"] }]}>
+          <Text style={[s.codePre, { color: colors["text-base"] }]} selectable numberOfLines={60}>
             {patch}
           </Text>
         </View>
@@ -151,20 +185,21 @@ function PatchDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
 }
 
 function GlobGrepDetail({ input, output, isDark }: { input: unknown; output: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const pattern = typeof input === "object" && input !== null ? (input as Record<string, unknown>).pattern : undefined
   const path = typeof input === "object" && input !== null ? (input as Record<string, unknown>).path : undefined
   const results = typeof output === "string" ? output : undefined
   return (
     <View style={s.detailSection}>
       {typeof pattern === "string" && (
-        <Text style={[s.detailMeta, isDark && s.detailMetaDark]}>
+        <Text style={[s.detailMeta, { color: colors["text-weak"] }]}>
           Pattern: {pattern}
           {typeof path === "string" ? ` in ${path}` : ""}
         </Text>
       )}
       {results && results.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={30}>
+        <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"], marginTop: 6 }]}>
+          <Text style={[s.codePre, { color: colors["text-base"] }]} selectable numberOfLines={30}>
             {results}
           </Text>
         </View>
@@ -174,11 +209,19 @@ function GlobGrepDetail({ input, output, isDark }: { input: unknown; output: unk
 }
 
 function WebfetchDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const url = typeof input === "object" && input !== null ? (input as Record<string, unknown>).url : undefined
   return (
     <View style={s.detailSection}>
       {typeof url === "string" && (
-        <Text style={[s.detailFile, isDark && s.detailFileDark, { color: "#8b5cf6" }]} selectable numberOfLines={3}>
+        <Text
+          style={[
+            s.detailFile,
+            { color: colors["text-interactive-base"], backgroundColor: colors["surface-interactive-weak"] },
+          ]}
+          selectable
+          numberOfLines={3}
+        >
           {url}
         </Text>
       )}
@@ -187,15 +230,18 @@ function WebfetchDetail({ input, isDark }: { input: unknown; isDark: boolean }) 
 }
 
 function TaskDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const description =
     typeof input === "object" && input !== null ? (input as Record<string, unknown>).description : undefined
   const prompt = typeof input === "object" && input !== null ? (input as Record<string, unknown>).prompt : undefined
   return (
     <View style={s.detailSection}>
-      {typeof description === "string" && <Text style={[s.detailMeta, isDark && s.detailMetaDark]}>{description}</Text>}
+      {typeof description === "string" && (
+        <Text style={[s.detailMeta, { color: colors["text-weak"] }]}>{description}</Text>
+      )}
       {typeof prompt === "string" && prompt.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={20}>
+        <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"], marginTop: 6 }]}>
+          <Text style={[s.codePre, { color: colors["text-base"] }]} selectable numberOfLines={20}>
             {prompt}
           </Text>
         </View>
@@ -205,6 +251,7 @@ function TaskDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
 }
 
 function TodoDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const todos = typeof input === "object" && input !== null ? (input as Record<string, unknown>).todos : undefined
   if (!Array.isArray(todos)) return null
   return (
@@ -217,9 +264,16 @@ function TodoDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
             <Ionicons
               name={done ? "checkbox" : "square-outline"}
               size={16}
-              color={done ? "#22c55e" : isDark ? "#666666" : "#999999"}
+              color={done ? colors["icon-success-base"] : colors["icon-weak-base"]}
             />
-            <Text style={[s.todoText, isDark && s.todoTextDark, done && s.todoDone]} numberOfLines={2}>
+            <Text
+              style={[
+                s.todoText,
+                { color: colors["text-base"] },
+                done && { textDecorationLine: "line-through", color: colors["text-weaker"] },
+              ]}
+              numberOfLines={2}
+            >
               {String(item.content || item.title || "")}
             </Text>
           </View>
@@ -230,6 +284,7 @@ function TodoDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
 }
 
 function GenericDetail({ input, output, isDark }: { input: unknown; output: unknown; isDark: boolean }) {
+  const { colors } = useTheme()
   const text =
     typeof output === "string"
       ? output
@@ -241,8 +296,8 @@ function GenericDetail({ input, output, isDark }: { input: unknown; output: unkn
   if (!text || text.length === 0) return null
   return (
     <View style={s.detailSection}>
-      <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
-        <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={30}>
+      <View style={[s.codeBlock, { backgroundColor: colors["surface-raised-base"] }]}>
+        <Text style={[s.codePre, { color: colors["text-base"] }]} selectable numberOfLines={30}>
           {text}
         </Text>
       </View>
@@ -285,10 +340,11 @@ function ToolDetail({ tool, isDark }: { tool: Part; isDark: boolean }) {
 
 // --- Error display ---
 function ErrorBanner({ message, isDark }: { message: string; isDark: boolean }) {
+  const { colors } = useTheme()
   return (
-    <View style={[s.errorBanner, isDark && s.errorBannerDark]}>
-      <Ionicons name="alert-circle" size={14} color="#ef4444" />
-      <Text style={s.errorText} numberOfLines={3} selectable>
+    <View style={[s.errorBanner, { backgroundColor: colors["surface-critical-weak"] }]}>
+      <Ionicons name="alert-circle" size={14} color={colors["icon-critical-base"]} />
+      <Text style={[s.errorText, { color: colors["text-on-critical-base"] }]} numberOfLines={3} selectable>
         {message}
       </Text>
     </View>
@@ -310,10 +366,11 @@ interface Props {
 }
 
 export function ToolCallCard({ tool, isDark }: Props) {
+  const { colors } = useTheme()
   const [expanded, setExpanded] = useState(false)
   const icon = (tool.tool && TOOL_ICONS[tool.tool]) || "extension-puzzle-outline"
   const status = tool.state?.status || "pending"
-  const color = statusColor(status)
+  const color = getStatusColor(status, colors)
   const error = tool.state?.error?.message
   const elapsed = duration(tool.state?.time?.start, tool.state?.time?.end)
   const hasDetail = tool.state?.input !== undefined || tool.state?.output !== undefined || error
@@ -322,13 +379,16 @@ export function ToolCallCard({ tool, isDark }: Props) {
     if (hasDetail) setExpanded((v) => !v)
   }, [hasDetail])
 
+  const borderColor = status === "error" ? colors["border-critical-base"] : colors["border-weak-base"]
+
   return (
     <TouchableOpacity
       style={[
         s.card,
-        isDark && s.cardDark,
-        status === "error" && s.cardError,
-        status === "error" && isDark && s.cardErrorDark,
+        {
+          backgroundColor: colors["surface-base"],
+          borderColor,
+        },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
@@ -337,21 +397,17 @@ export function ToolCallCard({ tool, isDark }: Props) {
       <View style={s.header}>
         <View style={s.headerLeft}>
           <Ionicons name={icon as any} size={16} color={color} />
-          <Text style={[s.name, isDark && s.nameDark]} numberOfLines={1}>
+          <Text style={[s.name, { color: colors["text-base"] }]} numberOfLines={1}>
             {tool.state?.title || tool.tool || "Tool"}
           </Text>
-          {elapsed && <Text style={[s.elapsed, isDark && s.elapsedDark]}>{elapsed}</Text>}
+          {elapsed && <Text style={[s.elapsed, { color: colors["text-weaker"] }]}>{elapsed}</Text>}
         </View>
         <View style={s.headerRight}>
           {status === "running" && <ActivityIndicator size="small" color={color} />}
-          {status === "completed" && <Ionicons name="checkmark-circle" size={16} color="#22c55e" />}
-          {status === "error" && <Ionicons name="close-circle" size={16} color="#ef4444" />}
+          {status === "completed" && <Ionicons name="checkmark-circle" size={16} color={colors["icon-success-base"]} />}
+          {status === "error" && <Ionicons name="close-circle" size={16} color={colors["icon-critical-base"]} />}
           {hasDetail && (
-            <Ionicons
-              name={expanded ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={isDark ? "#666666" : "#999999"}
-            />
+            <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={colors["icon-weak-base"]} />
           )}
         </View>
       </View>
@@ -372,16 +428,11 @@ export function ToolCallCard({ tool, isDark }: Props) {
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: "#ffffff",
     padding: 10,
     borderRadius: 8,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
   },
-  cardDark: { backgroundColor: "#2a2a2a", borderColor: "#3a3a3a" },
-  cardError: { borderColor: "#fecaca" },
-  cardErrorDark: { borderColor: "#7f1d1d" },
 
   header: {
     flexDirection: "row",
@@ -390,10 +441,8 @@ const s = StyleSheet.create({
   },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  name: { fontSize: 13, fontWeight: "500", color: "#0a0a0a", flex: 1 },
-  nameDark: { color: "#e5e5e5" },
-  elapsed: { fontSize: 11, color: "#999999" },
-  elapsedDark: { color: "#666666" },
+  name: { fontSize: 13, fontWeight: "500", flex: 1 },
+  elapsed: { fontSize: 11 },
 
   // Error
   errorBanner: {
@@ -402,11 +451,9 @@ const s = StyleSheet.create({
     gap: 6,
     marginTop: 8,
     padding: 8,
-    backgroundColor: "#fef2f2",
     borderRadius: 6,
   },
-  errorBannerDark: { backgroundColor: "#1a0a0a" },
-  errorText: { fontSize: 12, color: "#dc2626", flex: 1, lineHeight: 18 },
+  errorText: { fontSize: 12, flex: 1, lineHeight: 18 },
 
   // Detail
   detailScroll: { maxHeight: 300, marginTop: 8 },
@@ -414,32 +461,24 @@ const s = StyleSheet.create({
   detailFile: {
     fontSize: 12,
     fontFamily: mono,
-    color: "#6d28d9",
-    backgroundColor: "#f5f3ff",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
     overflow: "hidden",
   },
-  detailFileDark: { color: "#a78bfa", backgroundColor: "#1a1a2e" },
-  detailMeta: { fontSize: 12, color: "#666666", lineHeight: 18 },
-  detailMetaDark: { color: "#888888" },
+  detailMeta: { fontSize: 12, lineHeight: 18 },
 
   // Code block
   codeBlock: {
-    backgroundColor: "#f8f8f8",
     borderRadius: 6,
     padding: 10,
   },
-  codeBlockDark: { backgroundColor: "#1a1a1a" },
   codePre: {
     fontSize: 12,
     fontFamily: mono,
-    color: "#0a0a0a",
     lineHeight: 18,
   },
-  codePteDark: { color: "#e5e5e5" },
-  codePrompt: { color: "#8b5cf6", fontWeight: "700" },
+  codePrompt: { fontWeight: "700" },
 
   // Todo
   todoRow: {
@@ -448,7 +487,5 @@ const s = StyleSheet.create({
     gap: 8,
     paddingVertical: 3,
   },
-  todoText: { fontSize: 13, color: "#0a0a0a", flex: 1, lineHeight: 20 },
-  todoTextDark: { color: "#e5e5e5" },
-  todoDone: { textDecorationLine: "line-through", color: "#999999" },
+  todoText: { fontSize: 13, flex: 1, lineHeight: 20 },
 })

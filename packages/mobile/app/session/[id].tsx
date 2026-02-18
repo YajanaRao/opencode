@@ -38,6 +38,7 @@ import { useConnections } from "../../src/stores/connections"
 import { useAuth } from "../../src/stores/auth"
 import { useCatalog } from "../../src/stores/catalog"
 import { useSpeech } from "../../src/lib/speech"
+import { useTheme } from "@/lib/theme"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -98,6 +99,7 @@ function useKeyboardAnimation() {
 export default function SessionScreen() {
   const { id, directory } = useLocalSearchParams<{ id: string; directory?: string }>()
   const router = useRouter()
+  const { colors } = useTheme()
   const colorScheme = useColorScheme()
   const isDark = colorScheme === "dark"
   const insets = useSafeAreaInsets()
@@ -449,7 +451,7 @@ export default function SessionScreen() {
 
   // Current agent display
   const currentAgent = agents.find((a) => a.name === agent)
-  const agentColor = currentAgent?.color || "#8b5cf6"
+  const agentColor = currentAgent?.color || colors["secondary"]
   const modelLabel = model?.modelID ? model.modelID.split("/").pop() || model.modelID : "default"
 
   // Animated style for keyboard spacer
@@ -468,16 +470,16 @@ export default function SessionScreen() {
           headerRight: () => (
             <View style={s.headerRight}>
               {shortDir && (
-                <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
-                  <Ionicons name="folder-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-                  <Text style={[s.dirText, isDark && s.dirTextDark]}>{shortDir}</Text>
+                <View style={[s.dirBadge, { backgroundColor: colors["surface-base"] }]}>
+                  <Ionicons name="folder-outline" size={14} color={colors["text-base"]} />
+                  <Text style={[s.dirText, { color: colors["text-base"] }]}>{shortDir}</Text>
                 </View>
               )}
               <TouchableOpacity onPress={() => setShowInfo((v) => !v)} hitSlop={8}>
                 <Ionicons
                   name={showInfo ? "stats-chart" : "stats-chart-outline"}
                   size={20}
-                  color={showInfo ? "#3b82f6" : isDark ? "#888888" : "#666666"}
+                  color={showInfo ? colors["primary"] : colors["text-base"]}
                 />
               </TouchableOpacity>
             </View>
@@ -485,7 +487,7 @@ export default function SessionScreen() {
         }}
       />
 
-      <View style={[s.container, isDark && s.containerDark]}>
+      <View style={[s.container, { backgroundColor: colors["background-base"] }]}>
         {/* Session info pulldown */}
         <SessionInfo
           session={currentSession}
@@ -506,7 +508,7 @@ export default function SessionScreen() {
 
         {isLoading ? (
           <View style={s.loading}>
-            <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
+            <ActivityIndicator size="large" color={colors["neutral"]} />
           </View>
         ) : (
           <View style={s.listWrap}>
@@ -515,7 +517,7 @@ export default function SessionScreen() {
               data={messageData}
               inverted
               keyExtractor={(item) => item.message.id}
-              renderItem={({ item }) => <MessageBubble message={item.message} parts={item.parts} isDark={isDark} />}
+              renderItem={({ item }) => <MessageBubble message={item.message} parts={item.parts} />}
               contentContainerStyle={s.messageList}
               onScroll={handleScroll}
               scrollEventThrottle={100}
@@ -526,22 +528,25 @@ export default function SessionScreen() {
               ListFooterComponent={
                 loadingMore ? (
                   <View style={s.loadingMore}>
-                    <ActivityIndicator size="small" color={isDark ? "#888888" : "#666666"} />
-                    <Text style={[s.loadingMoreText, isDark && s.metaDark]}>Loading older messages...</Text>
+                    <ActivityIndicator size="small" color={colors["icon-base"]} />
+                    <Text style={{ fontSize: 13, color: colors["text-weak"] }}>Loading older messages...</Text>
                   </View>
                 ) : null
               }
               ListEmptyComponent={
                 <View style={s.emptyInverted}>
-                  <Ionicons name="chatbubble-outline" size={48} color={isDark ? "#444444" : "#cccccc"} />
-                  <Text style={[s.emptyText, isDark && s.metaDark]}>Start a conversation</Text>
-                  <Text style={[s.emptyHint, isDark && s.metaDark]}>Type / for commands</Text>
+                  <Ionicons name="chatbubble-outline" size={48} color={colors["icon-weak-base"]} />
+                  <Text style={{ fontSize: 16, color: colors["text-weak"], marginTop: 12 }}>Start a conversation</Text>
+                  <Text style={{ fontSize: 13, color: colors["text-weaker"], marginTop: 4 }}>Type / for commands</Text>
                 </View>
               }
             />
             {showScrollButton && (
-              <TouchableOpacity style={[s.scrollBtn, isDark && s.scrollBtnDark]} onPress={() => scrollToBottom(true)}>
-                <Ionicons name="chevron-down" size={24} color={isDark ? "#ffffff" : "#0a0a0a"} />
+              <TouchableOpacity
+                style={[s.scrollBtn, { backgroundColor: colors["surface-raised-base"] }]}
+                onPress={() => scrollToBottom(true)}
+              >
+                <Ionicons name="chevron-down" size={24} color={colors["text-base"]} />
               </TouchableOpacity>
             )}
           </View>
@@ -577,23 +582,25 @@ export default function SessionScreen() {
         )}
 
         {/* Agent/model toolbar */}
-        <View style={[s.toolbar, isDark && s.toolbarDark]}>
+        <View
+          style={[s.toolbar, { backgroundColor: colors["surface-raised-base"], borderTopColor: colors["surface"] }]}
+        >
           <TouchableOpacity
-            style={[s.agentChip, { borderColor: agentColor }]}
+            style={[s.agentChip, { backgroundColor: colors["background-base"], borderColor: agentColor }]}
             onPress={() => cycleAgent()}
             onLongPress={() => cycleAgent(-1)}
           >
             <View style={[s.agentDot, { backgroundColor: agentColor }]} />
-            <Text style={[s.agentLabel, isDark && s.textWhite]}>{agent || "build"}</Text>
-            <Ionicons name="swap-horizontal-outline" size={12} color={isDark ? "#888888" : "#666666"} />
+            <Text style={[s.agentLabel, { color: colors["text-base"] }]}>{agent || "build"}</Text>
+            <Ionicons name="swap-horizontal-outline" size={12} color={colors["icon-weak-base"]} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[s.modelChip, isDark && s.modelChipDark]}
+            style={[s.modelChip, { backgroundColor: colors["background-base"] }]}
             onPress={() => modelSheetRef.current?.expand()}
           >
-            <Ionicons name="hardware-chip-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-            <Text style={[s.modelLabel, isDark && s.metaDark]} numberOfLines={1}>
+            <Ionicons name="hardware-chip-outline" size={14} color={colors["text-base"]} />
+            <Text style={[s.modelLabel, { color: colors["text-base"] }]} numberOfLines={1}>
               {modelLabel}
             </Text>
           </TouchableOpacity>
@@ -604,23 +611,33 @@ export default function SessionScreen() {
 
         {/* Input */}
         <View
-          style={[s.inputContainer, isDark && s.inputContainerDark, { paddingBottom: Math.max(12, insets.bottom) }]}
+          style={[
+            s.inputContainer,
+            { paddingBottom: Math.max(12, insets.bottom), backgroundColor: colors["surface-raised-base"] },
+          ]}
         >
           <View style={s.inputRow}>
             {/* Attach button */}
             <TouchableOpacity style={s.attachBtn} onPress={pickFromLibrary} onLongPress={pickFromCamera}>
-              <Ionicons name="add-circle-outline" size={26} color={isDark ? "#888888" : "#666666"} />
+              <Ionicons name="add-circle-outline" size={26} color={colors["text-weak"]} />
             </TouchableOpacity>
 
             {/* Clipboard paste button */}
             <TouchableOpacity style={s.attachBtn} onPress={pasteFromClipboard}>
-              <Ionicons name="clipboard-outline" size={22} color={isDark ? "#888888" : "#666666"} />
+              <Ionicons name="clipboard-outline" size={22} color={colors["text-weak"]} />
             </TouchableOpacity>
 
             <TextInput
-              style={[s.input, isDark && s.inputDark, speech.listening && s.inputListening]}
+              style={[
+                s.input,
+                {
+                  backgroundColor: colors["surface-weak"],
+                  color: colors["text-base"],
+                },
+                speech.listening && { borderWidth: 1, borderColor: colors["border-critical-base"] },
+              ]}
               placeholder={speech.listening ? "Listening..." : isSending ? "Send a follow-up..." : "Type a message..."}
-              placeholderTextColor={speech.listening ? "#ef4444" : isDark ? "#666666" : "#999999"}
+              placeholderTextColor={speech.listening ? colors["text-on-critical-base"] : colors["text-weaker"]}
               value={speech.listening ? speech.transcript : input}
               onChangeText={speech.listening ? undefined : setInput}
               editable={!speech.listening}
@@ -629,26 +646,35 @@ export default function SessionScreen() {
             />
             {/* Stop button: only when busy and no input */}
             {isSending && !input.trim() && attachments.length === 0 && !speech.listening && (
-              <TouchableOpacity style={s.stopBtn} onPress={abortSession}>
-                <Ionicons name="stop" size={20} color="#ffffff" />
+              <TouchableOpacity
+                style={[s.stopBtn, { backgroundColor: colors["surface-critical-base"] }]}
+                onPress={abortSession}
+              >
+                <Ionicons name="stop" size={20} color={colors["text-on-critical-base"]} />
               </TouchableOpacity>
             )}
             {/* Mic button: when no input, not sending, and not listening */}
             {!isSending && !input.trim() && attachments.length === 0 && !speech.listening && (
               <TouchableOpacity style={s.micBtn} onPress={speech.start}>
-                <Ionicons name="mic" size={22} color={isDark ? "#888888" : "#666666"} />
+                <Ionicons name="mic" size={22} color={colors["text-weak"]} />
               </TouchableOpacity>
             )}
             {/* Listening indicator: tap to stop */}
             {speech.listening && (
-              <TouchableOpacity style={s.micBtnActive} onPress={speech.stop}>
-                <Ionicons name="mic" size={22} color="#ffffff" />
+              <TouchableOpacity
+                style={[s.micBtnActive, { backgroundColor: colors["surface-critical-base"] }]}
+                onPress={speech.stop}
+              >
+                <Ionicons name="mic" size={22} color={colors["text-base"]} />
               </TouchableOpacity>
             )}
             {/* Send button: when there's input */}
             {!speech.listening && (input.trim() || attachments.length > 0) && (
-              <TouchableOpacity style={s.sendBtn} onPress={handleSend}>
-                <Ionicons name="send" size={20} color="#ffffff" />
+              <TouchableOpacity
+                style={[s.sendBtn, { backgroundColor: colors["surface-interactive-base"] }]}
+                onPress={handleSend}
+              >
+                <Ionicons name="send" size={20} color={colors["text-base"]} />
               </TouchableOpacity>
             )}
           </View>
@@ -671,8 +697,7 @@ export default function SessionScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
-  containerDark: { backgroundColor: "#0a0a0a" },
+  container: { flex: 1 },
   loading: { flex: 1, justifyContent: "center", alignItems: "center" },
   listWrap: { flex: 1, position: "relative" },
 
@@ -687,7 +712,6 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -696,7 +720,6 @@ const s = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  scrollBtnDark: { backgroundColor: "#2a2a2a" },
 
   // Loading more (appears at top in inverted list = ListFooterComponent)
   loadingMore: {
@@ -706,7 +729,6 @@ const s = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
   },
-  loadingMoreText: { fontSize: 13, color: "#999999" },
 
   // Empty (inverted list flips content, so use transform to un-flip)
   emptyInverted: {
@@ -719,10 +741,6 @@ const s = StyleSheet.create({
 
   // Empty
   empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 64 },
-  emptyText: { fontSize: 16, color: "#999999", marginTop: 12 },
-  emptyHint: { fontSize: 13, color: "#bbbbbb", marginTop: 4 },
-  metaDark: { color: "#666666" },
-  textWhite: { color: "#ffffff" },
 
   // Toolbar
   toolbar: {
@@ -732,10 +750,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    backgroundColor: "#ffffff",
   },
-  toolbarDark: { borderTopColor: "#1a1a1a", backgroundColor: "#0a0a0a" },
   agentChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -746,28 +761,23 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   agentDot: { width: 8, height: 8, borderRadius: 4 },
-  agentLabel: { fontSize: 12, fontWeight: "600", color: "#0a0a0a" },
+  agentLabel: { fontSize: 12, fontWeight: "600" },
   modelChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  modelChipDark: { backgroundColor: "#1a1a1a" },
-  modelLabel: { fontSize: 12, color: "#666666", maxWidth: 160 },
+  modelLabel: { fontSize: 12, maxWidth: 160 },
 
   // Input
   inputContainer: {
     padding: 12,
     marginBottom: 8,
     borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    backgroundColor: "#ffffff",
   },
-  inputContainerDark: { borderTopColor: "#1a1a1a", backgroundColor: "#0a0a0a" },
   inputRow: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -780,26 +790,20 @@ const s = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
     maxHeight: 120,
-    color: "#0a0a0a",
   },
-  inputDark: { backgroundColor: "#1a1a1a", color: "#ffffff" },
-  inputListening: { borderWidth: 1, borderColor: "#ef4444" },
   sendBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#0a0a0a",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
   },
-  sendBtnDisabled: { backgroundColor: "#cccccc" },
   micBtn: {
     width: 40,
     height: 40,
@@ -812,7 +816,6 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ef4444",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
@@ -821,7 +824,6 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ef4444",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
@@ -833,12 +835,9 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#f5f5f5",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
-  dirBadgeDark: { backgroundColor: "#1a1a1a" },
-  dirText: { fontSize: 12, color: "#666666", fontWeight: "500" },
-  dirTextDark: { color: "#888888" },
+  dirText: { fontSize: 12, fontWeight: "500" },
 })

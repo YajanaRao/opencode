@@ -1,16 +1,9 @@
 import { useCallback, useState } from "react"
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  StyleSheet,
-  useColorScheme,
-  Linking,
-  Alert,
-} from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Linking, Alert } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
+import { useTheme } from "@/lib/theme"
+import type { ColorScheme } from "@/lib/theme"
 import { useAuth } from "../../src/stores/auth"
 import { useSettings } from "../../src/stores/settings"
 import {
@@ -20,30 +13,30 @@ import {
   granted as notificationsGranted,
 } from "../../src/lib/notifications"
 import type { Category } from "../../src/lib/notifications"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from "@/components/ui/dialog"
 
 function SettingRow({
   icon,
   label,
   description,
-  isDark,
   right,
   onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap
   label: string
   description?: string
-  isDark: boolean
   right?: React.ReactNode
   onPress?: () => void
 }) {
+  const { colors } = useTheme()
   const content = (
-    <View style={[styles.settingRow, isDark && styles.settingRowDark]}>
-      <View style={[styles.settingIcon, isDark && styles.settingIconDark]}>
-        <Ionicons name={icon} size={22} color={isDark ? "#ffffff" : "#0a0a0a"} />
+    <View style={[styles.settingRow, { borderBottomColor: colors["border-weak-base"] }]}>
+      <View style={[styles.settingIcon, { backgroundColor: colors["surface-weak"] }]}>
+        <Ionicons name={icon} size={22} color={colors["text-base"]} />
       </View>
       <View style={styles.settingContent}>
-        <Text style={[styles.settingLabel, isDark && styles.textDark]}>{label}</Text>
-        {description && <Text style={[styles.settingDescription, isDark && styles.metaDark]}>{description}</Text>}
+        <Text style={[styles.settingLabel, { color: colors["text-base"] }]}>{label}</Text>
+        {description && <Text style={[styles.settingDescription, { color: colors["text-weak"] }]}>{description}</Text>}
       </View>
       {right}
     </View>
@@ -56,22 +49,33 @@ function SettingRow({
   return content
 }
 
-function SettingSection({ title, children, isDark }: { title: string; children: React.ReactNode; isDark: boolean }) {
+function SettingSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const { colors } = useTheme()
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>{title}</Text>
-      <View style={[styles.sectionContent, isDark && styles.sectionContentDark]}>{children}</View>
+      <Text style={[styles.sectionTitle, { color: colors["text-weak"] }]}>{title}</Text>
+      <View
+        style={[
+          styles.sectionContent,
+          {
+            backgroundColor: colors["surface-base"],
+            borderColor: colors["border-weak-base"],
+          },
+        ]}
+      >
+        {children}
+      </View>
     </View>
   )
 }
 
 export default function SettingsScreen() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-
+  const { colors, themeId, colorScheme, themes, setTheme, setColorScheme } = useTheme()
   const { settings, hasBiometrics, updateSettings, lock } = useAuth()
   const { notifications, setNotification } = useSettings()
   const [osGranted, setOsGranted] = useState<boolean | null>(null)
+  const [showThemeDialog, setShowThemeDialog] = useState(false)
+  const [showSchemeDialog, setShowSchemeDialog] = useState(false)
 
   // Check OS permission state on first toggle attempt
   const handleToggle = useCallback(
@@ -98,116 +102,193 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, isDark && styles.containerDark]} contentContainerStyle={styles.content}>
-      <SettingSection title="Security" isDark={isDark}>
-        <SettingRow
-          icon="finger-print"
-          label="Require Biometric to Open"
-          description={
-            hasBiometrics ? "Use Face ID or Touch ID to unlock the app" : "Biometric authentication not available"
-          }
-          isDark={isDark}
-          right={
-            <Switch
-              value={settings.requireBiometric}
-              onValueChange={(value) => updateSettings({ requireBiometric: value })}
-              disabled={!hasBiometrics}
-              trackColor={{ false: "#767577", true: "#22c55e" }}
-            />
-          }
-        />
-        <SettingRow
-          icon="lock-closed"
-          label="Require Biometric to Send"
-          description="Authenticate before sending messages"
-          isDark={isDark}
-          right={
-            <Switch
-              value={settings.requireBiometricForMessages}
-              onValueChange={(value) => updateSettings({ requireBiometricForMessages: value })}
-              disabled={!hasBiometrics || !settings.requireBiometric}
-              trackColor={{ false: "#767577", true: "#22c55e" }}
-            />
-          }
-        />
-        {settings.requireBiometric && (
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <ScrollView
+        style={[styles.container, { backgroundColor: colors["background-weak"] }]}
+        contentContainerStyle={styles.content}
+      >
+        <SettingSection title="Appearance">
           <SettingRow
-            icon="exit"
-            label="Lock App Now"
-            description="Require authentication to reopen"
-            isDark={isDark}
-            onPress={lock}
-            right={<Ionicons name="chevron-forward" size={20} color={isDark ? "#666666" : "#999999"} />}
+            icon="color-palette"
+            label="Theme"
+            description={themeId}
+            onPress={() => setShowThemeDialog(true)}
+            right={<Ionicons name="chevron-forward" size={20} color={colors["icon-weak-base"]} />}
           />
-        )}
-      </SettingSection>
+          <SettingRow
+            icon={colorScheme === "dark" ? "moon" : colorScheme === "light" ? "sunny" : "sparkles"}
+            label="Dark Mode"
+            description={colorScheme === "system" ? "System Default" : colorScheme === "dark" ? "Dark" : "Light"}
+            onPress={() => setShowSchemeDialog(true)}
+            right={<Ionicons name="chevron-forward" size={20} color={colors["icon-weak-base"]} />}
+          />
+        </SettingSection>
 
-      <SettingSection title="Notifications" isDark={isDark}>
-        {categories.map((category) => {
-          const meta = categoryMeta[category]
-          return (
+        <SettingSection title="Security">
+          <SettingRow
+            icon="finger-print"
+            label="Require Biometric to Open"
+            description={
+              hasBiometrics ? "Use Face ID or Touch ID to unlock the app" : "Biometric authentication not available"
+            }
+            right={
+              <Switch
+                value={settings.requireBiometric}
+                onValueChange={(value) => updateSettings({ requireBiometric: value })}
+                disabled={!hasBiometrics}
+                trackColor={{ false: colors["border-weak-base"], true: colors["border-success-base"] }}
+              />
+            }
+          />
+          <SettingRow
+            icon="lock-closed"
+            label="Require Biometric to Send"
+            description="Authenticate before sending messages"
+            right={
+              <Switch
+                value={settings.requireBiometricForMessages}
+                onValueChange={(value) => updateSettings({ requireBiometricForMessages: value })}
+                disabled={!hasBiometrics || !settings.requireBiometric}
+                trackColor={{ false: colors["border-weak-base"], true: colors["border-success-base"] }}
+              />
+            }
+          />
+          {settings.requireBiometric && (
             <SettingRow
-              key={category}
-              icon={meta.icon as keyof typeof Ionicons.glyphMap}
-              label={meta.label}
-              description={meta.description}
-              isDark={isDark}
-              right={
-                <Switch
-                  value={notifications[category]}
-                  onValueChange={(value) => handleToggle(category, value)}
-                  trackColor={{ false: "#767577", true: "#22c55e" }}
-                />
-              }
+              icon="exit"
+              label="Lock App Now"
+              description="Require authentication to reopen"
+              onPress={lock}
+              right={<Ionicons name="chevron-forward" size={20} color={colors["icon-weak-base"]} />}
             />
-          )
-        })}
-        {osGranted === false && (
-          <View style={[styles.settingRow, isDark && styles.settingRowDark]}>
-            <Text style={[styles.settingDescription, { color: "#ef4444", paddingLeft: 48 }]}>
-              Notifications are disabled at the system level. Enable them in Settings to receive alerts.
-            </Text>
-          </View>
-        )}
-      </SettingSection>
+          )}
+        </SettingSection>
 
-      <SettingSection title="About" isDark={isDark}>
-        <SettingRow icon="information-circle" label="Version" description="1.0.0" isDark={isDark} />
-        <SettingRow
-          icon="logo-github"
-          label="GitHub"
-          description="View source code"
-          isDark={isDark}
-          onPress={() => Linking.openURL("https://github.com/anomalyco/opencode")}
-          right={<Ionicons name="open-outline" size={20} color={isDark ? "#666666" : "#999999"} />}
-        />
-        <SettingRow
-          icon="document-text"
-          label="Documentation"
-          description="Learn how to use OpenCode"
-          isDark={isDark}
-          onPress={() => Linking.openURL("https://opencode.ai/docs")}
-          right={<Ionicons name="open-outline" size={20} color={isDark ? "#666666" : "#999999"} />}
-        />
-      </SettingSection>
+        <SettingSection title="Notifications">
+          {categories.map((category) => {
+            const meta = categoryMeta[category]
+            return (
+              <SettingRow
+                key={category}
+                icon={meta.icon as keyof typeof Ionicons.glyphMap}
+                label={meta.label}
+                description={meta.description}
+                right={
+                  <Switch
+                    value={notifications[category]}
+                    onValueChange={(value) => handleToggle(category, value)}
+                    trackColor={{ false: colors["border-weak-base"], true: colors["border-success-base"] }}
+                  />
+                }
+              />
+            )
+          })}
+          {osGranted === false && (
+            <View style={[styles.settingRow, { borderBottomColor: colors["border-weak-base"] }]}>
+              <Text style={[styles.settingDescription, { color: colors["text-on-critical-base"], paddingLeft: 48 }]}>
+                Notifications are disabled at the system level. Enable them in Settings to receive alerts.
+              </Text>
+            </View>
+          )}
+        </SettingSection>
 
-      <View style={styles.footer}>
-        <Text style={[styles.footerText, isDark && styles.metaDark]}>OpenCode Mobile</Text>
-        <Text style={[styles.footerText, isDark && styles.metaDark]}>
-          Connect to your AI coding assistant from anywhere
-        </Text>
-      </View>
-    </ScrollView>
+        <SettingSection title="About">
+          <SettingRow icon="information-circle" label="Version" description="1.0.0" />
+          <SettingRow
+            icon="logo-github"
+            label="GitHub"
+            description="View source code"
+            onPress={() => Linking.openURL("https://github.com/anomalyco/opencode")}
+            right={<Ionicons name="open-outline" size={20} color={colors["icon-weak-base"]} />}
+          />
+          <SettingRow
+            icon="document-text"
+            label="Documentation"
+            description="Learn how to use OpenCode"
+            onPress={() => Linking.openURL("https://opencode.ai/docs")}
+            right={<Ionicons name="open-outline" size={20} color={colors["icon-weak-base"]} />}
+          />
+        </SettingSection>
+
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors["text-weaker"] }]}>OpenCode Mobile</Text>
+          <Text style={[styles.footerText, { color: colors["text-weaker"] }]}>
+            Connect to your AI coding assistant from anywhere
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* Theme Selector Dialog */}
+      <Dialog visible={showThemeDialog} onDismiss={() => setShowThemeDialog(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Theme</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            {Object.keys(themes)
+              .sort()
+              .map((id, index, array) => (
+                <TouchableOpacity
+                  key={id}
+                  style={[
+                    styles.themeItem,
+                    { borderBottomColor: colors["border-weak-base"] },
+                    index === array.length - 1 && { borderBottomWidth: 0 },
+                  ]}
+                  onPress={() => {
+                    setTheme(id)
+                    setShowThemeDialog(false)
+                  }}
+                >
+                  <Text style={[styles.themeName, { color: colors["text-base"] }]}>{id}</Text>
+                  {themeId === id && <Ionicons name="checkmark-circle" size={20} color={colors["icon-success-base"]} />}
+                </TouchableOpacity>
+              ))}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+
+      {/* Color Scheme Dialog */}
+      <Dialog visible={showSchemeDialog} onDismiss={() => setShowSchemeDialog(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Appearance</DialogTitle>
+          </DialogHeader>
+          <DialogBody scrollable={false}>
+            {[
+              { value: "system", label: "System Default", icon: "phone-portrait" },
+              { value: "light", label: "Light", icon: "sunny" },
+              { value: "dark", label: "Dark", icon: "moon" },
+            ].map((scheme, index, array) => (
+              <TouchableOpacity
+                key={scheme.value}
+                style={[
+                  styles.schemeItem,
+                  { borderBottomColor: colors["border-weak-base"] },
+                  index === array.length - 1 && { borderBottomWidth: 0 },
+                ]}
+                onPress={() => {
+                  setColorScheme(scheme.value as ColorScheme)
+                  setShowSchemeDialog(false)
+                }}
+              >
+                <Ionicons name={scheme.icon as keyof typeof Ionicons.glyphMap} size={20} color={colors["icon-base"]} />
+                <Text style={[styles.schemeName, { color: colors["text-base"] }]}>{scheme.label}</Text>
+                {colorScheme === scheme.value && (
+                  <Ionicons name="checkmark-circle" size={20} color={colors["icon-success-base"]} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  containerDark: {
-    backgroundColor: "#0a0a0a",
   },
   content: {
     paddingBottom: 32,
@@ -218,23 +299,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#666666",
     marginLeft: 16,
     marginBottom: 8,
     textTransform: "uppercase",
   },
-  sectionTitleDark: {
-    color: "#888888",
-  },
   sectionContent: {
-    backgroundColor: "#ffffff",
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#e5e5e5",
-  },
-  sectionContentDark: {
-    backgroundColor: "#1a1a1a",
-    borderColor: "#2a2a2a",
   },
   settingRow: {
     flexDirection: "row",
@@ -242,40 +313,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-  },
-  settingRowDark: {
-    borderBottomColor: "#2a2a2a",
   },
   settingIcon: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-  },
-  settingIconDark: {
-    backgroundColor: "#2a2a2a",
   },
   settingContent: {
     flex: 1,
   },
   settingLabel: {
     fontSize: 16,
-    color: "#0a0a0a",
-  },
-  textDark: {
-    color: "#ffffff",
   },
   settingDescription: {
     fontSize: 13,
-    color: "#666666",
     marginTop: 2,
-  },
-  metaDark: {
-    color: "#888888",
   },
   footer: {
     alignItems: "center",
@@ -283,7 +338,32 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: "#999999",
     textAlign: "center",
+  },
+  themeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    minHeight: 44,
+  },
+  themeName: {
+    fontSize: 15,
+    flex: 1,
+  },
+  schemeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    minHeight: 44,
+  },
+  schemeName: {
+    fontSize: 15,
+    flex: 1,
   },
 })

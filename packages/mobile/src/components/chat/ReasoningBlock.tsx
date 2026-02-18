@@ -1,28 +1,39 @@
 import { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTheme } from "../../lib/theme"
 
 interface Props {
   text: string
-  isDark: boolean
 }
 
-export function ReasoningBlock({ text, isDark }: Props) {
+export function ReasoningBlock({ text }: Props) {
+  const { colors, mode } = useTheme()
   const [expanded, setExpanded] = useState(false)
+  const isDark = mode === "dark"
 
   return (
     <TouchableOpacity
-      style={[s.block, isDark && s.blockDark]}
+      style={{
+        backgroundColor: colors["surface-warning-weak"],
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: colors["border-warning-base"],
+      }}
       onPress={() => setExpanded(!expanded)}
       activeOpacity={0.7}
     >
       <View style={s.header}>
-        <Ionicons name="bulb-outline" size={14} color="#f59e0b" />
-        <Text style={[s.label, isDark && s.labelDark]}>Thinking</Text>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={14} color={isDark ? "#666666" : "#999999"} />
+        <Ionicons name="bulb-outline" size={14} color={colors["icon-warning-base"]} />
+        <Text style={{ fontSize: 12, fontWeight: "600", color: colors["text-on-warning-base"], flex: 1 }}>
+          Thinking
+        </Text>
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={14} color={colors["text-weaker"]} />
       </View>
       {expanded && (
-        <Text style={[s.text, isDark && s.textDark]} selectable>
+        <Text style={{ fontSize: 13, lineHeight: 20, color: colors["text-on-warning-base"], marginTop: 8 }} selectable>
           {text}
         </Text>
       )}
@@ -31,18 +42,5 @@ export function ReasoningBlock({ text, isDark }: Props) {
 }
 
 const s = StyleSheet.create({
-  block: {
-    backgroundColor: "#fffbeb",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#fef3c7",
-  },
-  blockDark: { backgroundColor: "#1a1a0a", borderColor: "#333300" },
   header: { flexDirection: "row", alignItems: "center", gap: 6 },
-  label: { fontSize: 12, fontWeight: "600", color: "#92400e", flex: 1 },
-  labelDark: { color: "#f59e0b" },
-  text: { fontSize: 13, lineHeight: 20, color: "#78350f", marginTop: 8 },
-  textDark: { color: "#d4a574" },
 })

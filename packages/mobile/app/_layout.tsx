@@ -1,12 +1,13 @@
 import { useEffect, useRef } from "react"
 import { Stack, router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { useColorScheme, View, ActivityIndicator } from "react-native"
+import { View, ActivityIndicator } from "react-native"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { KeyboardProvider } from "react-native-keyboard-controller"
+import { ThemeProvider, useTheme } from "../src/lib/theme"
 import { useAuth } from "../src/stores/auth"
 import { useConnections } from "../src/stores/connections"
 import { useEvents } from "../src/stores/events"
@@ -17,10 +18,9 @@ import * as notifications from "../src/lib/notifications"
 
 const queryClient = new QueryClient()
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-
+function AppContent() {
+  const { colors, mode } = useTheme()
+  const isDark = mode === "dark"
   const { initialize: initAuth, isLoading: authLoading } = useAuth()
   const { loadConnections, isLoading: connectionsLoading, client } = useConnections()
   const sseStarted = useRef(false)
@@ -66,10 +66,10 @@ export default function RootLayout() {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
+          backgroundColor: colors["background-base"],
         }}
       >
-        <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
+        <ActivityIndicator size="large" color={colors["text-base"]} />
       </View>
     )
   }
@@ -84,11 +84,11 @@ export default function RootLayout() {
                 <Stack
                   screenOptions={{
                     headerStyle: {
-                      backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
+                      backgroundColor: colors["surface-base"],
                     },
-                    headerTintColor: isDark ? "#ffffff" : "#0a0a0a",
+                    headerTintColor: colors["text-base"],
                     contentStyle: {
-                      backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
+                      backgroundColor: colors["background-base"],
                     },
                   }}
                 >
@@ -122,5 +122,13 @@ export default function RootLayout() {
         </GestureHandlerRootView>
       </KeyboardProvider>
     </SafeAreaProvider>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider defaultTheme="nord">
+      <AppContent />
+    </ThemeProvider>
   )
 }
