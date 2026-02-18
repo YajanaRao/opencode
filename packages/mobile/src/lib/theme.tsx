@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from "react"
 import { useColorScheme, View, ActivityIndicator } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { resolveTheme, DEFAULT_THEMES, type DesktopTheme, type HexColor } from "@opencode-ai/ui/theme"
+import { resolveTheme } from "@opencode-ai/ui/theme/resolve"
+import { DEFAULT_THEMES } from "@opencode-ai/ui/theme/default-themes"
+import type { DesktopTheme, HexColor } from "@opencode-ai/ui/theme/types"
 
 export type ColorScheme = "light" | "dark" | "system"
 
