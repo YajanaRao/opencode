@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons"
 import { useConnections } from "../../src/stores/connections"
 import { useSettings } from "../../src/stores/settings"
 import { useTheme } from "@/lib/theme"
-import { Chip } from "@/components/ui/chip"
 import type { ServerConnection } from "../../src/lib/types"
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const
@@ -51,9 +50,9 @@ function ConnectionItem({
         <View style={styles.connectionHeader}>
           <Text style={[styles.connectionName, { color: colors["text-base"] }]}>{connection.name}</Text>
           {isActive && (
-            <Chip variant="filled" style={{ backgroundColor: colors["surface-success-strong"] }}>
-              Active
-            </Chip>
+            <View style={[styles.activeBadge, { backgroundColor: colors["surface-success-strong"] }]}>
+              <Text style={[styles.activeBadgeText, { color: colors["text-strong"] }]}>Active</Text>
+            </View>
           )}
         </View>
         <Text style={[styles.connectionUrl, { color: colors["text-weak"] }]} numberOfLines={1}>
@@ -210,6 +209,15 @@ const styles = StyleSheet.create({
   },
   connectionName: {
     fontSize: 16,
+    fontWeight: "600",
+  },
+  activeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  activeBadgeText: {
+    fontSize: 11,
     fontWeight: "600",
   },
   connectionUrl: {

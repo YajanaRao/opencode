@@ -33,6 +33,7 @@ import {
   type Attachment,
 } from "../../src/components/chat"
 import { AtPopover, type FileItem } from "../../src/components/chat/AtPopover"
+import { FileContextPills, type FileContextItem } from "../../src/components/chat/FileContextPills"
 import { useSessions } from "../../src/stores/sessions"
 import { useEvents, refreshPending } from "../../src/stores/events"
 import { useConnections } from "../../src/stores/connections"
@@ -165,6 +166,7 @@ export default function SessionScreen() {
   const [atQuery, setAtQuery] = useState("")
   const [atResults, setAtResults] = useState<FileItem[]>([])
   const [atLoading, setAtLoading] = useState(false)
+  const [fileContext, setFileContext] = useState<FileContextItem[]>([])
   const atControllerRef = useRef<AbortController | null>(null)
 
   const allCommands = useMemo<SlashCommand[]>(() => {
@@ -300,15 +302,26 @@ export default function SessionScreen() {
   // @ file selection handler
   const handleAtSelect = useCallback(
     (file: FileItem) => {
-      // Replace the @query with @filepath + space
-      const newInput = input.replace(/@(\S*)$/, `@${file.display} `)
+      // Remove the @query from input
+      const newInput = input.replace(/@(\S*)$/, "")
       setInput(newInput)
+
+      // Add to file context if not already there
+      setFileContext((prev) => {
+        const exists = prev.some((f) => f.path === file.path)
+        if (exists) return prev
+        return [...prev, { path: file.path, display: file.display }]
+      })
 
       // Close popover
       setAtActive(false)
     },
     [input],
   )
+
+  const removeFileContext = useCallback((index: number) => {
+    setFileContext((prev) => prev.filter((_, i) => i !== index))
+  }, [])
 
   // --- Image picking ---
 
@@ -397,22 +410,16 @@ export default function SessionScreen() {
 
   // --- Send ---
   const handleSend = async () => {
-    if (!input.trim() && attachments.length === 0) return
+    if (!input.trim() && attachments.length === 0 && fileContext.length === 0) return
     const authenticated = await authenticateForMessage()
     if (!authenticated) return
 
     const text = input.trim()
     const files = [...attachments]
-
-    // Parse @filepath mentions from input text
-    const atMatches = text.match(/@(\S+)/g) || []
-    const context = atMatches.map((match) => ({
-      path: match.slice(1), // Remove @ prefix
-      display: match.slice(1),
-    }))
-
+    const context = [...fileContext]
     setInput("")
     setAttachments([])
+    setFileContext([])
 
     // Server slash commands (no attachments for commands)
     if (text.startsWith("/") && files.length === 0 && context.length === 0) {
@@ -689,6 +696,9 @@ export default function SessionScreen() {
 
         {/* Attachment preview */}
         <ImageAttachments attachments={attachments} isDark={isDark} onRemove={removeAttachment} />
+
+        {/* File context pills */}
+        <FileContextPills files={fileContext} onRemove={removeFileContext} />
 
         {/* Input */}
         <View
